@@ -18,7 +18,7 @@ setup(
     license='GPL',
     packages=find_packages('src', exclude=['ez_setup']),
     package_dir={'': 'src'},
-    namespace_packages=[''],
+    namespace_packages=[],
     include_package_data=True,
     zip_safe=False,
     install_requires=[
@@ -27,11 +27,10 @@ setup(
         'Plone'
     ],
     extras_require={'test': [
-        'plone.app.testing',
     ]},
     entry_points="""
     # -*- Entry points: -*-
     [z3c.autoinclude.plugin]
-    target = plone
+    target = transmogrifier
     """
 )
