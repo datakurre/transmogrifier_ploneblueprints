@@ -3,6 +3,7 @@ from plone.dexterity.utils import iterSchemata
 from plone.rfc822 import initializeObjectFromSchemata
 from venusianconfiguration import configure
 from transmogrifier.blueprints import ConditionalBlueprint
+from email.message import Message
 
 import logging
 import email
@@ -35,7 +36,7 @@ class RFC822ExportSection(ConditionalBlueprint):
 class RFC822ImportSection(ConditionalBlueprint):
     def __iter__(self):
         for item in self.previous:
-            if self.condition(item):
+            if self.condition(item) and isinstance(item, Message):
                 portal = self.transmogrifier.context
                 path = "".join(portal.getPhysicalPath()) + item['_path']
                 ob = portal.unrestrictedTraverse(path)
