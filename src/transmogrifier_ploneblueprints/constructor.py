@@ -56,9 +56,9 @@ class ConstructorSection(ConditionalBlueprint):
     def __iter__(self):
         ttool = getToolByName(self.transmogrifier.context, 'portal_types')
         typekeyMatcher = defaultMatcher(
-            self.options, 'type-key', name, 'type', ('portal_type', 'Type'))
+            self.options, 'type-key', self.name, 'type', ('portal_type', 'Type'))
         pathkeyMatcher = defaultMatcher(
-            self.options, 'path-key', name, 'path')
+            self.options, 'path-key', self.name, 'path')
         required = bool(self.options.get('required'))
 
         for item in self.previous:
