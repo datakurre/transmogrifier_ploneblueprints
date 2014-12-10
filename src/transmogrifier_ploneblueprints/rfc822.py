@@ -1,4 +1,6 @@
 from Products.Archetypes.Marshall import RFC822Marshaller
+from plone.dexterity.utils import iterSchemata
+from plone.rfc822 import initializeObjectFromSchemata
 from venusianconfiguration import configure
 from transmogrifier.blueprints import ConditionalBlueprint
 
@@ -7,8 +9,8 @@ import email
 
 logger = logging.getLogger('transmogrifier')
 
-@configure.transmogrifier.blueprint.component(name='plone.atrfc822')
-class ATRFC822Section(ConditionalBlueprint):
+@configure.transmogrifier.blueprint.component(name='plone.rfc822.export')
+class RFC822ExportSection(ConditionalBlueprint):
     def _add_message(self, item):
         key = self.options.get('key')
         if '_object' in item.keys() and key:
@@ -29,3 +31,13 @@ class ATRFC822Section(ConditionalBlueprint):
                 self._add_message(item)
             yield item
 
+@configure.transmogrifier.blueprint.component(name='plone.rfc822.import')
+class RFC822ImportSection(ConditionalBlueprint):
+    def __iter__(self):
+        for item in self.previous:
+            if self.condition(item):
+                portal = self.transmogrifier.context
+                path = "".join(portal.getPhysicalPath()) + item['_path']
+                ob = portal.unrestrictedTraverse(path)
+                initializeObjectFromSchemata(ob, iterSchemata(ob), item)
+            yield item
