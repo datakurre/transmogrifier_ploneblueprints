@@ -1,4 +1,6 @@
 from Products.Archetypes.Marshall import RFC822Marshaller
+from Products.CMFCore.utils import getToolByName
+from plone.dexterity.interfaces import IDexterityFTI
 from plone.dexterity.utils import iterSchemata
 from plone.rfc822 import initializeObjectFromSchemata
 from venusianconfiguration import configure
@@ -15,6 +17,11 @@ class RFC822ExportSection(ConditionalBlueprint):
     def _add_message(self, item):
         key = self.options.get('key')
         if '_object' in item.keys() and key:
+            portal_types = getToolByName(self.transmogrifier.context, 'portal_types')
+            fti = portal_types.get(item['_type'])
+            is_dexterity = IDexterityFTI.providedBy(fti)
+            if is_dexterity:
+                pass
             marshaller = RFC822Marshaller()
             marshalled = marshaller.marshall(item['_object'])
             message = email.message_from_string(marshalled[2])

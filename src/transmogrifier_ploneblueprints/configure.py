@@ -21,21 +21,5 @@ for resource in pkg_resources.resource_listdir(__package__, ''):
         path = '{0:s}.{1:s}'.format(__package__, name)
         scan(importlib.import_module(path))
 
-
-# Register pipelines
-for resource in pkg_resources.resource_listdir(__package__, ''):
-    name, ext = os.path.splitext(resource)
-
-    if ext == '.cfg':
-        # Parse to read title and description
-        data = pkg_resources.resource_string(__package__, resource)
-        config = RawConfigParser()
-        config.readfp(StringIO(data.decode('utf-8')))
-
-        # Register
-        configure.transmogrifier.pipeline(
-            name=name,
-            title=config.get('transmogrifier', 'title'),
-            description=config.get('transmogrifier', 'description'),
-            configuration=resource
-        )
+from transmogrifier_ploneblueprints import pipelines
+configure.include(package=pipelines, file='configure.py')
