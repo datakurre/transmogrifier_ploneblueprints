@@ -18,6 +18,7 @@ class RFC822ExportSection(ConditionalBlueprint):
             marshaller = RFC822Marshaller()
             marshalled = marshaller.marshall(item['_object'])
             message = email.message_from_string(marshalled[2])
+            message.set_charset('utf-8')
 
             # convert list format
             for k, v in message.items():
