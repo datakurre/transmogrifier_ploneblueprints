@@ -14,6 +14,7 @@ from Products.CMFCore.utils import getToolByName
 import logging
 logger = logging.getLogger('transmogrifier')
 
+
 @configure.transmogrifier.blueprint.component(name='plone.constructor')
 class ConstructorSection(ConditionalBlueprint):
     def _handle(self, item, ttool, typekeyMatcher, pathkeyMatcher, required):
