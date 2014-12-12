@@ -2,7 +2,8 @@ from Products.Archetypes.Marshall import RFC822Marshaller
 from Products.CMFCore.utils import getToolByName
 from plone.dexterity.interfaces import IDexterityFTI
 from plone.dexterity.utils import iterSchemata
-from plone.rfc822 import initializeObjectFromSchemata
+from plone.rfc822 import initializeObjectFromSchemata, \
+    constructMessageFromSchemata
 from venusianconfiguration import configure
 from transmogrifier.blueprints import ConditionalBlueprint
 from email.message import Message
@@ -17,21 +18,24 @@ class RFC822ExportSection(ConditionalBlueprint):
     def _add_message(self, item):
         key = self.options.get('key')
         if '_object' in item.keys() and key:
-            portal_types = getToolByName(self.transmogrifier.context, 'portal_types')
+            ob = item['_object']
+            portal_types = getToolByName(self.transmogrifier.context,
+                                         'portal_types')
             fti = portal_types.get(item['_type'])
             is_dexterity = IDexterityFTI.providedBy(fti)
-            if is_dexterity:
-                pass
-            marshaller = RFC822Marshaller()
-            marshalled = marshaller.marshall(item['_object'])
-            message = email.message_from_string(marshalled[2])
-            message.set_charset('utf-8')
 
-            # convert list format
-            for k, v in message.items():
-                if '\r\n' in v:
-                    value = v.replace('\r\n  ', '||')
-                    message.replace_header(k, value)
+            if is_dexterity:
+                message = constructMessageFromSchemata(ob, iterSchemata(ob))
+            else:
+                marshaller = RFC822Marshaller()
+                marshalled = marshaller.marshall(ob)
+                message = email.message_from_string(marshalled[2])
+                # convert list format
+                for k, v in message.items():
+                    if '\r\n' in v:
+                        value = v.replace('\r\n  ', '||')
+                        message.replace_header(k, value)
+            message.set_charset('utf-8')
             item[key] = message
 
     def __iter__(self):
