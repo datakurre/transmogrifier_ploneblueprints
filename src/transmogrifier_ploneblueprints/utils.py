@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import posixpath
+import email
 
 
 # collective/transmogrifier/utils.py
@@ -30,3 +31,19 @@ def traverse(context, path, default=None):
         if context is default:
             break
     return context
+
+
+def string_to_message(item):
+    message = email.message_from_string(item)
+    # convert list format
+    for k, v in message.items():
+        if '\r\n' in v:
+            value = v.replace('\r\n  ', '||')
+            message.replace_header(k, value)
+    return message
+
+
+def message_to_string(item):
+    # not implemented completely yet
+    item_as_string = item.as_string(unixfrom=False)
+    return item_as_string

@@ -9,7 +9,8 @@ from transmogrifier.blueprints import ConditionalBlueprint
 from email.message import Message
 
 import logging
-import email
+from transmogrifier_ploneblueprints.utils import string_to_message, \
+    message_to_string
 
 logger = logging.getLogger('transmogrifier')
 
@@ -29,12 +30,7 @@ class RFC822ExportSection(ConditionalBlueprint):
             else:
                 marshaller = RFC822Marshaller()
                 marshalled = marshaller.marshall(ob)
-                message = email.message_from_string(marshalled[2])
-                # convert list format
-                for k, v in message.items():
-                    if '\r\n' in v:
-                        value = v.replace('\r\n  ', '||')
-                        message.replace_header(k, value)
+                message = string_to_message(marshalled[2])
             message.set_charset('utf-8')
             item[key] = message
 
@@ -46,11 +42,32 @@ class RFC822ExportSection(ConditionalBlueprint):
 
 @configure.transmogrifier.blueprint.component(name='plone.rfc822.import')
 class RFC822ImportSection(ConditionalBlueprint):
+    def _update_schema(self, ob, item):
+        portal_types = getToolByName(self.transmogrifier.context,
+                                     'portal_types')
+        fti = portal_types.get(item['_type'])
+        is_dexterity = IDexterityFTI.providedBy(fti)
+
+        if is_dexterity:
+            initializeObjectFromSchemata(ob, iterSchemata(ob), item)
+
+        else:
+            email_string = message_to_string(item)
+            marshaller = RFC822Marshaller()
+            marshaller.demarshall(ob, email_string)
+
+
     def __iter__(self):
         for item in self.previous:
             if self.condition(item) and isinstance(item, Message):
                 portal = self.transmogrifier.context
                 path = "".join(portal.getPhysicalPath()) + item['_path']
-                ob = portal.unrestrictedTraverse(path)
-                initializeObjectFromSchemata(ob, iterSchemata(ob), item)
+                try:
+                    ob = portal.unrestrictedTraverse(path)
+                except KeyError:
+                    logger.error("Object creation failed: ")
+                    logger.error(path)
+                    logger.error(item['_type'])
+                else:
+                    self._update_schema(ob, item)
             yield item
