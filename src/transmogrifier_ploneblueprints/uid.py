@@ -1,12 +1,8 @@
 from venusianconfiguration import configure
-from transmogrifier.blueprints import Blueprint
 from transmogrifier.blueprints import ConditionalBlueprint
-from Products.Archetypes.interfaces import IReferenceable as \
-    ATIReferenceable
-from Products.Archetypes.config import UUID_ATTR as AT_UID_ATTR
-from plone.app.referenceablebehavior.referenceable import IReferenceable as \
-    DXIReferenceable
-from plone.uuid.interfaces import ATTRIBUTE_NAME as DX_UID_ATTR, IUUID
+from Products.Archetypes.config import UUID_ATTR
+from plone.uuid.interfaces import IUUID
+from plone.uuid.interfaces import IMutableUUID
 
 
 @configure.transmogrifier.blueprint.component(name='plone.get_uuid')
@@ -16,8 +12,9 @@ class GetUUID(ConditionalBlueprint):
         for item in self.previous:
             if self.condition(item):
                 ob = item.get(key)
-                if ob is not None and IUUID.providedBy(ob):
-                    item['_uid'] = IUUID(ob)
+                uuid = IUUID(ob, None)
+                if uuid is not None:
+                    item['_uid'] = uuid
             yield item
 
 
@@ -46,25 +43,31 @@ class SetUUID(ConditionalBlueprint):
             obj = portal.unrestrictedTraverse(path)
             uid = item.get('_uid')
 
+            adapter = IMutableUUID(obj, None)
+            if adapter is not None:
+                # DX
+                adapter.set(uid)
+            else:
+                # AT
+                import pdb; pdb.set_trace()
+                setattr(obj, UUID_ATTR, uid)
+
             # if not uid:
             #     import pdb; pdb.set_trace()
 
-            at_uid = ATIReferenceable.providedBy(obj)
-            dx_uid = DXIReferenceable.providedBy(obj)
-            try:
-                old_uid = IUUID(obj)
-            except TypeError:
-                import pdb; pdb.set_trace()
-            if old_uid != uid:
-                # Code from plone.app.transmogrifier used for AT objects:
-                if at_uid:
-                    if not old_uid:
-                        setattr(obj, AT_UUID_ATTR, uid)
-                    else:
-                        obj._setUID(uid)
-                else:
-                    setattr(obj, DX_UID_ATTR, uid)
-                # else: #Don't ask, JUST DO IT!
+#           at_uid = ATIReferenceable.providedBy(obj)
+#           dx_uid = DXIReferenceable.providedBy(obj)
+#           old_uid = IUUID(obj, None)
+#           if old_uid != uid:
+#               # Code from plone.app.transmogrifier used for AT objects:
+#               if at_uid:
+#                   if not old_uid:
+#                       setattr(obj, AT_UUID_ATTR, uid)
+#                   else:
+#                       obj._setUID(uid)
+#               else:
+#                   setattr(obj, DX_UID_ATTR, uid)
+#               # else: #Don't ask, JUST DO IT!
                 #     # If the attribute is not used as UID, it
                 #     # is not used as anything else as well,
                 #     # and at least the desired UID value stays recorded in the
