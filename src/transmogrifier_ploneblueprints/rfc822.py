@@ -1,3 +1,4 @@
+from email.encoders import encode_base64
 from Products.Archetypes.Marshall import RFC822Marshaller
 from Products.CMFCore.utils import getToolByName
 from plone.dexterity.interfaces import IDexterityFTI
@@ -31,6 +32,8 @@ class RFC822ExportSection(ConditionalBlueprint):
                 marshaller = RFC822Marshaller()
                 marshalled = marshaller.marshall(ob)
                 message = string_to_message(marshalled[2])
+                encode_base64(message)
+
             message.set_charset('utf-8')
             item[key] = message
 
