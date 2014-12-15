@@ -44,6 +44,14 @@ def string_to_message(item):
 
 
 def message_to_string(item):
-    # not implemented completely yet
+    replacements = []
+    # this is heuristic
+    for k, v in item.items():
+        if '||' in v:
+            replacements.append((v, v.replace('||', '\r\n  ')))
+
     item_as_string = item.as_string(unixfrom=False)
+
+    for replacement in replacements:
+        item_as_string = item_as_string.replace(replacement[0], replacement[1])
     return item_as_string
