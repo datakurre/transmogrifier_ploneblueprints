@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import base64
 import posixpath
 import email
 
@@ -45,7 +46,11 @@ def string_to_message(item):
 
 def message_to_string(item):
     replacements = []
-    # this is heuristic
+
+    # to avoid side effects
+    temp_payload = item._payload
+    item._payload = base64.decodestring(item._payload)
+
     for k, v in item.items():
         if '||' in v:
             replacements.append((v, v.replace('||', '\r\n  ')))
@@ -54,4 +59,7 @@ def message_to_string(item):
 
     for replacement in replacements:
         item_as_string = item_as_string.replace(replacement[0], replacement[1])
+
+    item._payload = temp_payload
+
     return item_as_string

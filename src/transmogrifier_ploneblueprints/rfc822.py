@@ -1,3 +1,4 @@
+import base64
 from email.encoders import encode_base64
 from Products.Archetypes.Marshall import RFC822Marshaller
 from Products.CMFCore.utils import getToolByName
@@ -43,6 +44,7 @@ class RFC822ExportSection(ConditionalBlueprint):
                 self._add_message(item)
             yield item
 
+
 @configure.transmogrifier.blueprint.component(name='plone.rfc822.import')
 class RFC822ImportSection(ConditionalBlueprint):
     def _update_schema(self, ob, item):
@@ -53,7 +55,6 @@ class RFC822ImportSection(ConditionalBlueprint):
 
         if is_dexterity:
             initializeObjectFromSchemata(ob, iterSchemata(ob), item)
-
         else:
             email_string = message_to_string(item)
             marshaller = RFC822Marshaller()
@@ -65,12 +66,6 @@ class RFC822ImportSection(ConditionalBlueprint):
             if self.condition(item) and isinstance(item, Message):
                 portal = self.transmogrifier.context
                 path = "".join(portal.getPhysicalPath()) + item['_path']
-                try:
-                    ob = portal.unrestrictedTraverse(path)
-                except KeyError:
-                    logger.error("Object creation failed: ")
-                    logger.error(path)
-                    logger.error(item['_type'])
-                else:
-                    self._update_schema(ob, item)
+                ob = portal.unrestrictedTraverse(path)
+                self._update_schema(ob, item)
             yield item
