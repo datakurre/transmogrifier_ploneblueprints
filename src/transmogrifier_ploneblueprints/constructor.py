@@ -16,7 +16,7 @@ logger = logging.getLogger('transmogrifier')
 
 
 @configure.transmogrifier.blueprint.component(name='plone.constructor')
-class ConstructorSection(ConditionalBlueprint):
+class Constructor(ConditionalBlueprint):
     def _handle(self, item, ttool, typekeyMatcher, pathkeyMatcher, required):
         keys = item.keys()
         typekey = typekeyMatcher(*keys)[0]

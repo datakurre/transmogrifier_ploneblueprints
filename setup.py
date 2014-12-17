@@ -25,7 +25,8 @@ setup(
         'setuptools',
         'venusianconfiguration',
         'transmogrifier',
-        'Plone'
+        'Plone',
+        'plone.api'
     ],
     extras_require={'test': [
     ]},

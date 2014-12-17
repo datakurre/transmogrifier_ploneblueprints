@@ -4,7 +4,6 @@ from pprint import pprint
 import logging
 
 from venusianconfiguration import configure
-
 from transmogrifier.blueprints import ConditionalBlueprint
 
 

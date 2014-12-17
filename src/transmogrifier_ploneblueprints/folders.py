@@ -1,9 +1,13 @@
 # -*- coding: utf-8 -*-
+import importlib
+
+# noinspection PyProtectedMember
+from Products.Archetypes.ArchetypeTool import _types
+from plone import api
+from plone.dexterity.interfaces import IDexterityFTI
 from venusianconfiguration import configure
 from transmogrifier.blueprints import ConditionalBlueprint
-
 from transmogrifier.utils import defaultMatcher
-
 from transmogrifier_ploneblueprints.utils import pathsplit
 from transmogrifier_ploneblueprints.utils import traverse
 
@@ -13,9 +17,10 @@ from transmogrifier_ploneblueprints.utils import traverse
 
 # noinspection PyPep8Naming
 @configure.transmogrifier.blueprint.component(name='plone.folders')
-class FoldersSection(ConditionalBlueprint):
+class Folders(ConditionalBlueprint):
     def __iter__(self):
-        pathKeyMatcher = defaultMatcher(self.options, 'path-key', self.name, 'path')
+        pathKeyMatcher = defaultMatcher(
+            self.options, 'path-key', self.name, 'path')
 
         newPathKey = self.options.get('new-path-key', None)
         newTypeKey = self.options.get('new-type-key', '_type')
@@ -70,4 +75,35 @@ class FoldersSection(ConditionalBlueprint):
 
                 if cache:
                     seen.add('{0:s}/{1:s}'.format(container, id_, ))
+            yield item
+
+
+def ensure_correct_class(ob):
+    # TODO: Detect if class is changed into container type and initialize it
+    types_tool = api.portal.get_tool('portal_types')
+    fti = types_tool.get(ob.portal_type)
+    if IDexterityFTI.providedBy(fti):
+        module_name, class_name = fti.klass.rsplit('.', 1)
+        module = importlib.import_module(module_name)
+        klass = getattr(module, class_name)
+    else:
+        key = '.'.join([fti.product, fti.id])
+        klass = _types[key]['klass']
+    ob.__class__ = klass
+    ob._p_changed = True
+
+
+@configure.transmogrifier.blueprint.component(name='plone.class')
+class Class(ConditionalBlueprint):
+    def __iter__(self):
+        portal = api.portal.get()
+        for item in self.previous:
+            if self.condition(item):
+                try:
+                    path = ''.join(portal.getPhysicalPath()) + item['_path']
+                    ob = portal.unrestrictedTraverse(path)
+                except KeyError:
+                    pass
+                else:
+                    ensure_correct_class(ob)
             yield item

@@ -19,7 +19,7 @@ class GetUUID(ConditionalBlueprint):
 
 
 # sc/transmogrifier/sections/universal_uid_updater.py
-#by jsbueno
+# by jsbueno
 
 @configure.transmogrifier.blueprint.component(name='plone.set_uuid')
 class SetUUID(ConditionalBlueprint):
