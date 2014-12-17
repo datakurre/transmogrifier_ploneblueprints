@@ -6,10 +6,8 @@ package when included for zope.configuration with venusianconfiguration.
 """
 import importlib
 import os
-import pkg_resources
-from io import StringIO
 
-from configparser import RawConfigParser
+import pkg_resources
 from venusianconfiguration import configure
 from venusianconfiguration import scan
 

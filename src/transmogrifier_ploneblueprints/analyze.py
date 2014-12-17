@@ -1,11 +1,11 @@
+# -*- coding: utf-8 -*-
 from io import BytesIO
 from pprint import pprint
-from venusianconfiguration import configure
-from transmogrifier.blueprints import ConditionalBlueprint
-
 import logging
 
-logger = logging.getLogger('transmogrifier')
+from venusianconfiguration import configure
+
+from transmogrifier.blueprints import ConditionalBlueprint
 
 
 def get_pprint(obj):
@@ -14,11 +14,12 @@ def get_pprint(obj):
     return fp.getvalue()
 
 
-@configure.transmogrifier.blueprint.component(name='plone.report')
-class ReportSection(ConditionalBlueprint):
+@configure.transmogrifier.blueprint.component(name='export.analyze')
+class Analyze(ConditionalBlueprint):
     def __iter__(self):
-        types = {}
+        logger = logging.getLogger(self.options.get('name', 'transmogrifier'))
 
+        types = {}
         for item in self.previous:
             if self.condition(item):
                 type_ = item['_type']
@@ -35,4 +36,3 @@ class ReportSection(ConditionalBlueprint):
 
         # Log the grand total
         logger.log(level, get_pprint(types))
-

@@ -1,18 +1,21 @@
-import base64
 from email.encoders import encode_base64
+from email.message import Message
+import logging
+
 from Products.Archetypes.Marshall import RFC822Marshaller
+
 from Products.CMFCore.utils import getToolByName
 from plone.dexterity.interfaces import IDexterityFTI
 from plone.dexterity.utils import iterSchemata
 from plone.rfc822 import initializeObjectFromSchemata, \
     constructMessageFromSchemata
 from venusianconfiguration import configure
-from transmogrifier.blueprints import ConditionalBlueprint
-from email.message import Message
 
-import logging
+from transmogrifier.blueprints import ConditionalBlueprint
+
 from transmogrifier_ploneblueprints.utils import string_to_message, \
     message_to_string
+
 
 logger = logging.getLogger('transmogrifier')
 
@@ -33,7 +36,7 @@ class RFC822ExportSection(ConditionalBlueprint):
                 marshaller = RFC822Marshaller()
                 marshalled = marshaller.marshall(ob)
                 message = string_to_message(marshalled[2])
-		message.set_charset('utf-8')
+                message.set_charset('utf-8')
                 encode_base64(message)
             item[key] = message
 

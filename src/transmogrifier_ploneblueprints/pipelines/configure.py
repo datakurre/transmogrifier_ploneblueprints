@@ -4,14 +4,12 @@ This module scans all direct submodules for component registrations in this
 package when included for zope.configuration with venusianconfiguration.
 
 """
-import importlib
 import os
-import pkg_resources
 from io import StringIO
 
+import pkg_resources
 from configparser import RawConfigParser
 from venusianconfiguration import configure
-from venusianconfiguration import scan
 
 
 # Register pipelines
