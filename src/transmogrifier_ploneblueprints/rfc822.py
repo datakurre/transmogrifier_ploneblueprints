@@ -1,17 +1,24 @@
 # -*- coding: utf-8 -*-
-from email.encoders import encode_base64
 from email.message import Message
 
+import pkg_resources
 from plone import api
-from Products.Archetypes.Marshall import RFC822Marshaller
 from plone.dexterity.interfaces import IDexterityFTI
 from plone.dexterity.utils import iterSchemata
+from plone.rfc822 import initializeObject
 from plone.rfc822 import initializeObjectFromSchemata
+from plone.rfc822 import constructMessage
 from plone.rfc822 import constructMessageFromSchemata
 from venusianconfiguration import configure
 from transmogrifier.blueprints import ConditionalBlueprint
-from transmogrifier_ploneblueprints.utils import string_to_message
-from transmogrifier_ploneblueprints.utils import message_to_string
+
+try:
+    pkg_resources.get_distribution('Products.Archetypes')
+except pkg_resources.DistributionNotFound:
+    HAS_ARCHETYPES = False
+else:
+    from collective.atrfc822.fields import iterFields
+    HAS_ARCHETYPES = True
 
 
 def marshall(ob):
@@ -20,13 +27,11 @@ def marshall(ob):
     if IDexterityFTI.providedBy(fti):
         # DX
         message = constructMessageFromSchemata(ob, iterSchemata(ob))
-    else:
+    elif HAS_ARCHETYPES:
         # AT
-        marshaller = RFC822Marshaller()
-        marshaled = marshaller.marshall(ob)
-        message = string_to_message(marshaled[2])
-        message.set_charset('utf-8')
-        encode_base64(message)
+        message = constructMessage(ob, iterFields(ob))
+    else:
+        message = Message()
     return message
 
 
@@ -46,12 +51,14 @@ def demarshall(ob, message):
     fti = types_tool.get(ob.portal_type)
     if IDexterityFTI.providedBy(fti):
         # DX
-        initializeObjectFromSchemata(ob, iterSchemata(ob), message)
-    else:
+        try:
+            initializeObjectFromSchemata(ob, iterSchemata(ob), message)
+        except Exception as e:
+            import pdb; pdb.set_trace()
+            initializeObjectFromSchemata(ob, iterSchemata(ob), message)
+    elif HAS_ARCHETYPES:
         # AT
-        email_string = message_to_string(message)
-        marshaller = RFC822Marshaller()
-        marshaller.demarshall(ob, email_string)
+        initializeObject(ob, iterFields(ob), message)
 
 
 @configure.transmogrifier.blueprint.component(name='plone.rfc822.demarshall')

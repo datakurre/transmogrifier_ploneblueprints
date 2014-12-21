@@ -26,7 +26,8 @@ setup(
         'venusianconfiguration',
         'transmogrifier',
         'Plone',
-        'plone.api'
+        'plone.api',
+        'collective.atrfc822'
     ],
     extras_require={'test': [
     ]},
