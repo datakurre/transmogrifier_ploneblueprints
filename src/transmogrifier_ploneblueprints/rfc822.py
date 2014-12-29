@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from email.message import Message
+import Acquisition
 
 import pkg_resources
 from plone import api
@@ -25,14 +26,17 @@ else:
 def marshall(ob):
     types_tool = api.portal.get_tool('portal_types')
     fti = types_tool.get(ob.portal_type)
+    # noinspection PyUnresolvedReferences
     if IDexterityFTI.providedBy(fti):
         # DX
         message = constructMessageFromSchemata(ob, iterSchemata(ob))
-    elif HAS_ARCHETYPES:
+    elif HAS_ARCHETYPES and hasattr(Acquisition.aq_base(ob), 'schema'):
         # AT
         message = constructMessage(ob, iterFields(ob))
     else:
-        message = Message()
+        # Other
+        schemata = tuple(ob.__provides__.interfaces())
+        message = constructMessageFromSchemata(ob, schemata)
     return message
 
 
