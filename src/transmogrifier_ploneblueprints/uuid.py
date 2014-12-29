@@ -3,6 +3,7 @@ from plone import api
 from plone.dexterity.interfaces import IDexterityFTI
 from venusianconfiguration import configure
 from transmogrifier.blueprints import ConditionalBlueprint
+from transmogrifier_ploneblueprints.utils import traverse
 from plone.uuid.interfaces import IUUID
 from plone.uuid.interfaces import IMutableUUID
 
@@ -29,10 +30,11 @@ else:
 @configure.transmogrifier.blueprint.component(name='plone.get_uuid')
 class GetUUID(ConditionalBlueprint):
     def __iter__(self):
-        object_key = self.options.get('object-key', '_object')
+        portal = api.portal.get()
         for item in self.previous:
-            if self.condition(item) and object_key in item:
-                uuid = IUUID(item.get(object_key), None)
+            if self.condition(item):
+                ob = traverse(portal, item['_path'])
+                uuid = IUUID(ob, None)
                 if uuid is not None:
                     item['_uuid'] = uuid
             yield item
@@ -45,12 +47,12 @@ def set_uuid(ob, uuid):
     if IDexterityFTI.providedBy(fti):
         # DX
         if HAS_DEXTERITY_REFERENCEABLE:
-            if DX.IReferenceable.provdedBy(ob):
+            if DX.IReferenceable.providedBy(ob):
                 ob._uncatalogUID(api.portal.get())
         # noinspection PyArgumentList
         IMutableUUID(ob).set(str(uuid))
         if HAS_DEXTERITY_REFERENCEABLE:
-            if DX.IReferenceable.provdedBy(ob):
+            if DX.IReferenceable.providedBy(ob):
                 ob._catalogUID(api.portal.get())
     elif HAS_ARCHETYPES:
         if AT.IReferenceable.providedBy(ob):
@@ -62,8 +64,8 @@ def set_uuid(ob, uuid):
 @configure.transmogrifier.blueprint.component(name='plone.set_uuid')
 class SetUUID(ConditionalBlueprint):
     def __iter__(self):
-        object_key = self.options.get('object-key', '_object')
+        portal = api.portal.get()
         for item in self.previous:
-            if self.condition(item) and object_key in item:
-                set_uuid(item.get(object_key))
+            if self.condition(item):
+                set_uuid(traverse(portal, item['_path']), item['_uuid'])
             yield item
