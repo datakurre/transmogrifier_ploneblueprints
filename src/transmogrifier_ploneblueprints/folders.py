@@ -113,9 +113,8 @@ class PortalType(ConditionalBlueprint):
         for item in self.previous:
             if self.condition(item):
                 try:
-                    path = ''.join(portal.getPhysicalPath()) + item['_path']
+                    ob = traverse(portal, item['_path'])
                     portal_type = item[key]
-                    ob = portal.unrestrictedTraverse(path)
                 except KeyError:
                     pass
                 else:

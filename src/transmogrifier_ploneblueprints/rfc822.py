@@ -9,6 +9,7 @@ from plone.rfc822 import initializeObject
 from plone.rfc822 import initializeObjectFromSchemata
 from plone.rfc822 import constructMessage
 from plone.rfc822 import constructMessageFromSchemata
+from transmogrifier_ploneblueprints.utils import traverse
 from venusianconfiguration import configure
 from transmogrifier.blueprints import ConditionalBlueprint
 
@@ -67,7 +68,6 @@ class RFC822Demarshall(ConditionalBlueprint):
         portal = api.portal.get()
         for item in self.previous:
             if self.condition(item) and isinstance(item, Message):
-                path = ''.join(portal.getPhysicalPath()) + item['_path']
-                ob = portal.unrestrictedTraverse(path)
+                ob = traverse(portal, item['_path'])
                 demarshall(ob, item)
             yield item
