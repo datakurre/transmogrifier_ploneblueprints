@@ -13,7 +13,7 @@ def get_pprint(obj):
     return fp.getvalue()
 
 
-@configure.transmogrifier.blueprint.component(name='export.analyze')
+@configure.transmogrifier.blueprint.component(name='plone.export.analyze')
 class Analyze(ConditionalBlueprint):
     def __iter__(self):
         logger = logging.getLogger(self.options.get('name', 'transmogrifier'))
