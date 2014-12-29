@@ -9,8 +9,10 @@ from venusianconfiguration import configure
 class ReindexObject(ConditionalBlueprint):
     def __iter__(self):
         portal = api.portal.get()
+        indexes = api.portal.get_tool('portal_catalog').indexes()
         for item in self.previous:
             if self.condition(item):
                 ob = traverse(portal, item['_path'])
-                ob.reindexObject()
+                ob.reindexObject(idxs=indexes)
+                ob.reindexObjectSecurity()
             yield item
