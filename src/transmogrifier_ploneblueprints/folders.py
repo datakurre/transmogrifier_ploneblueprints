@@ -105,17 +105,21 @@ def ensure_correct_class(ob):
         ob._p_changed = True
 
 
-@configure.transmogrifier.blueprint.component(name='plone.class')
-class Class(ConditionalBlueprint):
+@configure.transmogrifier.blueprint.component(name='plone.portal_type')
+class PortalType(ConditionalBlueprint):
     def __iter__(self):
         portal = api.portal.get()
+        key = self.options.get('key', '_type')
         for item in self.previous:
             if self.condition(item):
                 try:
                     path = ''.join(portal.getPhysicalPath()) + item['_path']
+                    portal_type = item[key]
                     ob = portal.unrestrictedTraverse(path)
                 except KeyError:
                     pass
                 else:
-                    ensure_correct_class(ob)
+                    if ob.portal_type != portal_type:
+                        ob.portal_type = portal_type
+                        ensure_correct_class(ob)
             yield item
