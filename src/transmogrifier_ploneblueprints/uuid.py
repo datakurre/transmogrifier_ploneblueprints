@@ -66,6 +66,6 @@ class SetUUID(ConditionalBlueprint):
     def __iter__(self):
         portal = api.portal.get()
         for item in self.previous:
-            if self.condition(item):
+            if self.condition(item) and '_uuid' in item:
                 set_uuid(traverse(portal, item['_path']), item['_uuid'])
             yield item
