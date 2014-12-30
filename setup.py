@@ -30,6 +30,9 @@ setup(
         'collective.atrfc822'
     ],
     extras_require={'test': [
+        'plone.testing',
+        'plone.app.testing',
+        'plone.app.contenttypes'
     ]},
     entry_points="""
     # -*- Entry points: -*-
