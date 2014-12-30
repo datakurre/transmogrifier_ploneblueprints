@@ -59,8 +59,9 @@ def demarshall(ob, message):
         try:
             initializeObjectFromSchemata(ob, iterSchemata(ob), message)
         except Exception as e:
-            import pdb; pdb.set_trace()
-            initializeObjectFromSchemata(ob, iterSchemata(ob), message)
+            raise
+#           import pdb; pdb.set_trace()
+#           initializeObjectFromSchemata(ob, iterSchemata(ob), message)
     elif HAS_ARCHETYPES:
         # AT
         initializeObject(ob, iterFields(ob), message)

@@ -5,10 +5,12 @@ import shutil
 
 from transmogrifier.registry import configuration_registry
 
-from plone.app.testing import PloneSandboxLayer
-from plone.app.testing import PLONE_FIXTURE
-from plone.app.testing import IntegrationTesting
 from plone.app.testing import FunctionalTesting
+from plone.app.testing import IntegrationTesting
+from plone.app.testing import PLONE_FIXTURE
+from plone.app.testing import PloneSandboxLayer
+from plone.app.testing import TEST_USER_ID
+from plone.app.testing import setRoles
 
 
 class PloneBlueprints(PloneSandboxLayer):
@@ -28,6 +30,10 @@ class PloneBlueprints(PloneSandboxLayer):
         self.loadZCML(package=transmogrifier,
                       name='configure.zcml')
 
+        import collective.atrfc822
+        self.loadZCML(package=collective.atrfc822,
+                      name='configure.py')
+
         import transmogrifier_ploneblueprints
         self.loadZCML(package=transmogrifier_ploneblueprints,
                       name='configure.py')
@@ -37,6 +43,7 @@ class PloneBlueprints(PloneSandboxLayer):
 
     def setUpPloneSite(self, portal):
         portal.portal_workflow.setDefaultChain('simple_publication_workflow')
+        setRoles(portal, TEST_USER_ID, ['Manager'])
 
     # noinspection PyUnusedLocal
     def tearDownZope(self, app):

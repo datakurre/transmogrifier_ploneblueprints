@@ -2,15 +2,10 @@
 from io import BytesIO
 from pprint import pprint
 import logging
+from transmogrifier.utils import pformat_msg
 
 from venusianconfiguration import configure
 from transmogrifier.blueprints import ConditionalBlueprint
-
-
-def get_pprint(obj):
-    fp = BytesIO()
-    pprint(obj, fp)
-    return fp.getvalue()
 
 
 @configure.transmogrifier.blueprint.component(name='plone.export.analyze')
@@ -34,4 +29,4 @@ class Analyze(ConditionalBlueprint):
             level = int(level)
 
         # Log the grand total
-        logger.log(level, get_pprint(types))
+        logger.log(level, pformat_msg(types))

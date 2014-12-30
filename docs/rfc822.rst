@@ -1,0 +1,95 @@
+RFC822 Marshalling
+------------------
+
+Exporting content
+
+    >>> api.content.create(
+    ...     type='Document',
+    ...     title='My Content',
+    ...     text='<p>Hello world</p>',
+    ...     container=api.portal.get()
+    ... )
+    <ATDocument at /plone/my-content>
+
+    >>> pipeline = """
+    ... [transmogrifier]
+    ... include = plone.export.content
+    ... pipeline =
+    ...     plone.export.content.search
+    ...     plone.export.content.get_object
+    ...     plone.export.content.marshall
+    ...     stringify
+    ...     logger
+    ...
+    ... [stringify]
+    ... blueprint = transmogrifier.set
+    ... message = python:item['message'].as_string(unixfrom=False)
+    ...
+    ... [logger]
+    ... blueprint = transmogrifier.logger
+    ... name = logger
+    ... key = message
+    ... """
+    ...
+    >>> registerConfiguration('ploneblueprints.tests.rfc822', pipeline)
+    >>> ITransmogrifier(api.portal.get())('ploneblueprints.tests.rfc822')
+    >>> print(logger.records[0].msg)
+    id: my-content
+    title: My Content
+    description:
+    subject:
+    relatedItems:
+    location:
+    language: en
+    effectiveDate:
+    expirationDate:
+    creation_date: ...
+    modification_date: ...
+    creators: test_user_1_
+    contributors:
+    rights:
+    allowDiscussion: False
+    excludeFromNav: False
+    presentation: False
+    tableContents: False
+    MIME-Version: 1.0
+    Content-Type: text/html
+    <BLANKLINE>
+    <p>Hello world</p>
+
+Importing content
+
+    >>> pipeline = """
+    ... [transmogrifier]
+    ... include =
+    ...     plone.export.content
+    ...     plone.import.content
+    ... pipeline =
+    ...     plone.export.content.search
+    ...     plone.export.content.get_type
+    ...     plone.export.content.get_path
+    ...     plone.export.content.get_object
+    ...     plone.export.content.behead
+    ...     plone.export.content.marshall
+    ...
+    ...     modify
+    ...
+    ...     plone.export.content.invert
+    ...     plone.import.content.codec
+    ...     plone.import.content.fix_dublincore
+    ...     plone.import.content.cleanup
+    ...     plone.import.content.folders
+    ...     plone.import.content.constructor
+    ...     plone.import.content.demarshall
+    ... prefix = /plone
+    ...
+    ... [modify]
+    ... blueprint = transmogrifier.set
+    ... _path = python:item['_path'] + '-imported'
+    ... """
+    ...
+    >>> registerConfiguration('ploneblueprints.tests.rfc822.import', pipeline)
+    >>> before = set(api.portal.get().objectIds())
+    >>> ITransmogrifier(api.portal.get())('ploneblueprints.tests.rfc822.import')
+    >>> print(set(api.portal.get().objectIds()).difference(before))
+    set(['my-content-imported'])

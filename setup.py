@@ -24,7 +24,7 @@ setup(
     install_requires=[
         'setuptools',
         'venusianconfiguration',
-        'transmogrifier',
+        'transmogrifier [path]',
         'Plone',
         'plone.api',
         'collective.atrfc822'

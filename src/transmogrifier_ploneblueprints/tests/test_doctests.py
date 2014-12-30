@@ -4,7 +4,8 @@ import logging
 import os
 import unittest
 
-from transmogrifier import Transmogrifier
+from plone import api
+from transmogrifier.interfaces import ITransmogrifier
 from transmogrifier_ploneblueprints.testing import \
     PLONEBLUEPRINTS_FUNCTIONAL_TESTING
 from zope.testing.loggingsupport import InstalledHandler
@@ -21,9 +22,9 @@ def test_suite():
     for filename in os.listdir(os.path.join(my_dir, docs)):
         path = os.path.join(docs, filename)
         globs = {'registerConfiguration': registerConfiguration,
-                 'Transmogrifier': Transmogrifier({}),
-                 'logger': InstalledHandler('logger', level=logging.DEBUG)}
-        flags = doctest.NORMALIZE_WHITESPACE
+                 'ITransmogrifier': ITransmogrifier, 'api': api,
+                 'logger': InstalledHandler('logger', level=logging.INFO)}
+        flags = doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS
         suite.addTests([
             layered(doctest.DocFileSuite(path, globs=globs, optionflags=flags),
                     layer=PLONEBLUEPRINTS_FUNCTIONAL_TESTING)
