@@ -15,7 +15,7 @@ from venusianconfiguration import scan
 # Scan modules
 for resource in pkg_resources.resource_listdir(__package__, ''):
     name, ext = os.path.splitext(resource)
-    if ext == '.py' and name not in ('__init__', 'configure'):
+    if ext == '.py' and name not in ('__init__', 'configure', 'testing'):
         path = '{0:s}.{1:s}'.format(__package__, name)
         scan(importlib.import_module(path))
 
