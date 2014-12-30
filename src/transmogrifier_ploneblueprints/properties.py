@@ -23,5 +23,12 @@ class SetProperties(ConditionalBlueprint):
         for item in self.previous:
             if self.condition(item):
                 ob = traverse(portal, item['_path'])
-                # set properties
+                props = item['properties']
+                for prop in props:
+                    key, value, type_ = prop
+                    if key in ob.propertyIds():
+                        ob.manage_changeProperties(**{key: value})
+                        # what to do if type is different?
+                    else:
+                        ob.manage_addProperty(key, value, type_)
             yield item
