@@ -26,6 +26,8 @@ class SetProperties(ConditionalBlueprint):
                 props = item['properties']
                 for prop in props:
                     key, value, type_ = prop
+                    if key == 'title':
+                        continue
                     if key in ob.propertyIds():
                         ob.manage_changeProperties(**{key: value})
                         # what to do if type is different?
