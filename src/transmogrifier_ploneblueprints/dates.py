@@ -11,10 +11,12 @@ class FixDates(ConditionalBlueprint):
         for item in self.previous:
             if self.condition(item):
                 ob = traverse(portal, item['_path'])
-                ob.setModificationDate(item['modification_date'])
-                try:
-                    ob.setCreationDate(item['creation_date'])
-                except AttributeError:
-                    # dexterity content does not have setCreationDate
-                    ob.creation_date = item['creation_date']
+                if 'modification_date' in item:
+                    ob.setModificationDate(item['modification_date'])
+                if 'creation_date' in item:
+                    try:
+                        ob.setCreationDate(item['creation_date'])
+                    except AttributeError:
+                        # dexterity content does not have setCreationDate
+                        ob.creation_date = item['creation_date']
             yield item
