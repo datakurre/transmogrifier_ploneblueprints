@@ -13,7 +13,7 @@ class GetProperties(ConditionalBlueprint):
                 ob = item['_object']
                 properties = [(key, ob.getProperty(key), ob.getPropertyType(key)) 
                               for key in ob.propertyIds()] 
-                item['properties'] = properties
+                item['_properties'] = properties
             yield item
 
 @configure.transmogrifier.blueprint.component(name='plone.properties.set')
@@ -23,7 +23,7 @@ class SetProperties(ConditionalBlueprint):
         for item in self.previous:
             if self.condition(item):
                 ob = traverse(portal, item['_path'])
-                props = item['properties']
+                props = item['_properties']
                 for prop in props:
                     key, value, type_ = prop
                     if key == 'title':
