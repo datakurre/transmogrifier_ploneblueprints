@@ -9,10 +9,9 @@ from Acquisition import aq_base
 @configure.transmogrifier.blueprint.component(name='plone.local_roles.get')
 class GetLocalRoles(ConditionalBlueprint):
     def __iter__(self):
-        portal = api.portal.get()
         for item in self.previous:
             if self.condition(item):
-                ob = traverse(portal, item['_path'])
+                ob = item['_object']
                 item['_block_inherit'] = getattr(aq_base(ob), 
                                                  '__ac_local_roles_block__', False)
                 item['_local_roles'] = getattr(aq_base(ob), 
