@@ -34,6 +34,10 @@ def constructInstance(item, type_key_matcher, path_key_matcher, required):
 
     path = path.encode('ASCII')
     container, id_ = posixpath.split(path.strip('/'))
+    
+    if not id_: # site root should exist
+        return
+
     context = traverse(portal, container, None)
     if context is None:
         error = 'Container %s does not exist for item %s' % (
@@ -46,7 +50,7 @@ def constructInstance(item, type_key_matcher, path_key_matcher, required):
     # noinspection PyUnresolvedReferences
     if getattr(Acquisition.aq_base(context), id_, None) is not None:  # exists
         return
-
+    
     # noinspection PyProtectedMember
     obj = fti._constructInstance(context, id_)
 

@@ -74,5 +74,6 @@ class RFC822Demarshall(ConditionalBlueprint):
         for item in self.previous:
             if self.condition(item) and isinstance(item, Message):
                 ob = traverse(portal, item['_path'])
-                demarshall(ob, item)
+                if ob is not portal:
+                    demarshall(ob, item)
             yield item

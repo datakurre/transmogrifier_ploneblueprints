@@ -25,4 +25,6 @@ class SetLocalRoles(ConditionalBlueprint):
         for item in self.previous:
             if self.condition(item):
                 ob = traverse(portal, item['_path'])
+                ob.__ac_local_roles__ = item['_local_roles']
+                ob.__ac_local_roles_block__ = item['_block_inherit']
             yield item

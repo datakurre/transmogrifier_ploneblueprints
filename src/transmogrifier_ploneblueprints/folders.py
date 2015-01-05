@@ -118,7 +118,7 @@ class PortalType(ConditionalBlueprint):
                 except KeyError:
                     pass
                 else:
-                    if ob.portal_type != portal_type:
+                    if ob.portal_type != portal_type and ob is not portal:
                         ob.portal_type = portal_type
                         ensure_correct_class(ob)
             yield item
