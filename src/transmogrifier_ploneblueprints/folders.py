@@ -68,6 +68,7 @@ def folders(item, path_key_matcher, new_path_key, new_type_key, folder_type,
     if cache:
         seen.add('{0:s}/{1:s}'.format(container, id_, ))
 
+
 # noinspection PyPep8Naming
 @configure.transmogrifier.blueprint.component(name='plone.folders')
 class Folders(ConditionalBlueprint):

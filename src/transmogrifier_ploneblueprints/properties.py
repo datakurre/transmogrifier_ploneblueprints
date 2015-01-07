@@ -11,10 +11,13 @@ class GetProperties(ConditionalBlueprint):
         for item in self.previous:
             if self.condition(item):
                 ob = item['_object']
-                properties = [(key, ob.getProperty(key), ob.getPropertyType(key)) 
-                              for key in ob.propertyIds()] 
+                properties = [
+                    (key, ob.getProperty(key), ob.getPropertyType(key))
+                    for key in ob.propertyIds()
+                ]
                 item['_properties'] = properties
             yield item
+
 
 @configure.transmogrifier.blueprint.component(name='plone.properties.set')
 class SetProperties(ConditionalBlueprint):

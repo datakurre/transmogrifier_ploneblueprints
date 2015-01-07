@@ -58,7 +58,7 @@ def demarshall(ob, message):
         # DX
         try:
             initializeObjectFromSchemata(ob, iterSchemata(ob), message)
-        except Exception as e:
+        except Exception:
             raise
 #           import pdb; pdb.set_trace()
 #           initializeObjectFromSchemata(ob, iterSchemata(ob), message)

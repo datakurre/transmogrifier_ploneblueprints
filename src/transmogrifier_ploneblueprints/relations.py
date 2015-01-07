@@ -14,7 +14,7 @@ try:
 except pkg_resources.DistributionNotFound:
     HAS_RELATIONFIELD = False
 else:
-    from zope.intid import interfaces, IIntIds
+    from zope.intid import IIntIds
     from z3c.relationfield.interfaces import IRelation
     from z3c.relationfield.interfaces import IRelationChoice
     from z3c.relationfield import RelationValue

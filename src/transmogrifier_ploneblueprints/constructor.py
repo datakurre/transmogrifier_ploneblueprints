@@ -1,8 +1,9 @@
 import posixpath
-import Acquisition
 
+import Acquisition
 from plone import api
 from venusianconfiguration import configure
+
 from transmogrifier.blueprints import ConditionalBlueprint
 from transmogrifier.utils import defaultMatcher
 from transmogrifier_ploneblueprints.utils import traverse
@@ -34,8 +35,8 @@ def constructInstance(item, type_key_matcher, path_key_matcher, required):
 
     path = path.encode('ASCII')
     container, id_ = posixpath.split(path.strip('/'))
-    
-    if not id_: # site root should exist
+
+    if not id_:  # site root should exist
         return
 
     context = traverse(portal, container, None)
@@ -47,10 +48,10 @@ def constructInstance(item, type_key_matcher, path_key_matcher, required):
         logger.warn(error)
         return
 
-    # noinspection PyUnresolvedReferences
+    # noinspection PyUnresolvedeferences
     if getattr(Acquisition.aq_base(context), id_, None) is not None:  # exists
         return
-    
+
     # noinspection PyProtectedMember
     obj = fti._constructInstance(context, id_)
 
@@ -61,7 +62,6 @@ def constructInstance(item, type_key_matcher, path_key_matcher, required):
 
     if obj.getId() != id_:
         item[path_key] = posixpath.join(container, obj.getId())
-
 
 
 @configure.transmogrifier.blueprint.component(name='plone.constructor')

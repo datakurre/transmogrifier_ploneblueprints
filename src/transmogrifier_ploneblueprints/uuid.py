@@ -15,7 +15,6 @@ except pkg_resources.DistributionNotFound:
     HAS_ARCHETYPES = False
 else:
     from Products.Archetypes import interfaces as AT
-    from Products.Archetypes.config import UUID_ATTR
     HAS_ARCHETYPES = True
 
 try:

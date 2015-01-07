@@ -4,6 +4,7 @@ from transmogrifier.blueprints import ConditionalBlueprint
 from transmogrifier_ploneblueprints.utils import traverse
 from venusianconfiguration import configure
 
+
 @configure.transmogrifier.blueprint.component(name='plone.fix_dates')
 class FixDates(ConditionalBlueprint):
     def __iter__(self):

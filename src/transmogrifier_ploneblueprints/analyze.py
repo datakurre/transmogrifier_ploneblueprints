@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
-from io import BytesIO
-from pprint import pprint
 import logging
-from transmogrifier.utils import pformat_msg
 
 from venusianconfiguration import configure
+
+from transmogrifier.utils import pformat_msg
 from transmogrifier.blueprints import ConditionalBlueprint
 
 
