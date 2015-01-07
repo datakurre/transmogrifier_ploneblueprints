@@ -18,3 +18,5 @@ env:
   - PLONE=4.1.x
   - PLONE=4.2.x
   - PLONE=4.3.x
+notifications:
+  flowdock: 827dea8da0905dbc8399d66eb75868df
