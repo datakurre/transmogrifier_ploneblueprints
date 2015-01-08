@@ -5,7 +5,7 @@ from transmogrifier_ploneblueprints.utils import traverse
 from venusianconfiguration import configure
 
 
-@configure.transmogrifier.blueprint.component(name='plone.fix_dates')
+@configure.transmogrifier.blueprint.component(name='plone.dates.set')
 class FixDates(ConditionalBlueprint):
     def __iter__(self):
         portal = api.portal.get()

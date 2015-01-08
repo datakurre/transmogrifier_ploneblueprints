@@ -26,7 +26,7 @@ else:
     HAS_DEXTERITY_REFERENCEABLE = True
 
 
-@configure.transmogrifier.blueprint.component(name='plone.get_uuid')
+@configure.transmogrifier.blueprint.component(name='plone.uuid.get')
 class GetUUID(ConditionalBlueprint):
     def __iter__(self):
         portal = api.portal.get()
@@ -60,7 +60,7 @@ def set_uuid(ob, uuid):
             ob._setUID(uuid)
 
 
-@configure.transmogrifier.blueprint.component(name='plone.set_uuid')
+@configure.transmogrifier.blueprint.component(name='plone.uuid.set')
 class SetUUID(ConditionalBlueprint):
     def __iter__(self):
         portal = api.portal.get()

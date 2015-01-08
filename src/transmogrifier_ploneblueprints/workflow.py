@@ -6,7 +6,7 @@ from transmogrifier_ploneblueprints.utils import traverse
 from venusianconfiguration import configure
 
 
-@configure.transmogrifier.blueprint.component(name='plone.set_workflow')
+@configure.transmogrifier.blueprint.component(name='plone.workflow.set')
 class SetWorkflow(ConditionalBlueprint):
     def __iter__(self):
         portal = api.portal.get()
