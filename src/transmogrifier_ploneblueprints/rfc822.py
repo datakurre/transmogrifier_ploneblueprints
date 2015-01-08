@@ -10,6 +10,7 @@ from plone.rfc822 import initializeObject
 from plone.rfc822 import initializeObjectFromSchemata
 from plone.rfc822 import constructMessage
 from plone.rfc822 import constructMessageFromSchemata
+from zope.schema import getFieldNamesInOrder
 from transmogrifier_ploneblueprints.utils import traverse
 from venusianconfiguration import configure
 from transmogrifier.blueprints import ConditionalBlueprint
@@ -48,6 +49,27 @@ class RFC822Marshall(ConditionalBlueprint):
             if self.condition(item):
                 if '_object' in item and key:
                     item[key] = marshall(item['_object'])
+
+                # Marshall Topic criteria as Collection compatible header
+                if item['_type'] == 'Topic':
+                    from transmogrifier_ploneblueprints.rfc822_topics import (
+                        IMockCollection, MockCollection, convert)
+
+                    ob = item['_object']
+
+                    # noinspection PyPep8Naming
+                    def getNamesAndFieldsInOrder(iface):
+                        for field_name in getFieldNamesInOrder(iface):
+                            yield field_name, iface[field_name]
+
+                    message = constructMessage(
+                        MockCollection(*convert(ob)),
+                        getNamesAndFieldsInOrder(IMockCollection)
+                    )
+
+                    for name in getFieldNamesInOrder(IMockCollection):
+                        item[key].add_header(name, message[name])
+
             yield item
 
 
