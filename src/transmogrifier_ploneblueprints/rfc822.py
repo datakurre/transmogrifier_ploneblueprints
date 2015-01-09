@@ -52,7 +52,7 @@ class RFC822Marshall(ConditionalBlueprint):
 
                 # Marshall Topic criteria as Collection compatible header
                 if item['_type'] == 'Topic':
-                    from transmogrifier_ploneblueprints.rfc822_topics import (
+                    from transmogrifier_ploneblueprints.rfc822_topic import (
                         IMockCollection, MockCollection, convert)
 
                     ob = item['_object']

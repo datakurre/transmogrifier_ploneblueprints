@@ -77,10 +77,10 @@ class CriterionConverter(object):
         if not values:
             return value
         new_values = []
-        portal_types = api.portal.get_tool('portal_types')
+        types_tool = api.portal.get_tool('portal_types')
         type_to_portal_type = {}
-        portal_types = portal_types.objectIds()
-        for portal_type, Type in portal_types.listTypeTitles().items():
+        portal_types = types_tool.objectIds()
+        for portal_type, Type in types_tool.listTypeTitles().items():
             type_to_portal_type[Type] = portal_type
         for Type in values:
             portal_type = type_to_portal_type.get(Type)
