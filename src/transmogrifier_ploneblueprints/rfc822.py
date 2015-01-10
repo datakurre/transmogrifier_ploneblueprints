@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from email.message import Message
-import Acquisition
 
+import Acquisition
 import pkg_resources
 from plone import api
 from plone.dexterity.interfaces import IDexterityFTI
@@ -11,9 +11,11 @@ from plone.rfc822 import initializeObjectFromSchemata
 from plone.rfc822 import constructMessage
 from plone.rfc822 import constructMessageFromSchemata
 from zope.schema import getFieldNamesInOrder
-from transmogrifier_ploneblueprints.utils import traverse
 from venusianconfiguration import configure
+
+from transmogrifier_ploneblueprints.utils import traverse
 from transmogrifier.blueprints import ConditionalBlueprint
+
 
 try:
     pkg_resources.get_distribution('Products.Archetypes')
@@ -68,7 +70,7 @@ class RFC822Marshall(ConditionalBlueprint):
                     )
 
                     for name in getFieldNamesInOrder(IMockCollection):
-                        item[key].add_header(name, message[name])
+                        item[key][name] = message[name]
 
             yield item
 
