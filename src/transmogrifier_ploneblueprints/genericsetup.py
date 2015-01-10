@@ -91,8 +91,6 @@ class GenericSetupConstructor(ConditionalBlueprint):
     def __iter__(self):
         portal_setup = api.portal.get_tool('portal_setup')
         for item in self.previous:
-            import pdb; pdb.set_trace()
             if self.condition(item) and '_tarball' in item:
-                import pdb; pdb.set_trace()
                 import_tarball(portal_setup, item)
             yield item
