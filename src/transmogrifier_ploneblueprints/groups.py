@@ -12,15 +12,15 @@ class GetGroups(Blueprint):
 
         portal = api.portal.get()
         groups = portal.acl_users.source_groups.getGroupIds()
-        
+
         for group_id in groups:
             group = api.group.get(group_id)
             if group is None:
                 continue
 
-            item = {}
-            item['name'] = group_id
-            item['members'] = [(member.getUserName(), 
-                                member.getProperty('email')) 
-                               for member in group.getGroupMembers()]
-            yield item 
+            item = {
+                'name': group_id,
+                'members': [(member.getUserName(), member.getProperty('email'))
+                            for member in group.getGroupMembers()]
+            }
+            yield item
