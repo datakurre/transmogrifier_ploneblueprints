@@ -53,7 +53,12 @@ def constructInstance(item, type_key_matcher, path_key_matcher, required):
         return
 
     # noinspection PyProtectedMember
-    obj = fti._constructInstance(context, id_)
+    try:
+        obj = fti._constructInstance(context, id_)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        import pdb; pdb.set_trace()
 
     # For CMF <= 2.1 (aka Plone 3)
     if hasattr(fti, '_finishConstruction'):

@@ -21,6 +21,9 @@ from zope.schema.interfaces import IChoice
 from transmogrifier_ploneblueprints.utils import traverse
 from transmogrifier.blueprints import ConditionalBlueprint
 
+import logging
+logger = logging.getLogger('transmogrifier')
+
 
 try:
     pkg_resources.get_distribution('Products.Archetypes')
@@ -100,4 +103,8 @@ class ChoiceValueFieldMarshaler(UnicodeValueFieldMarshaler):
                 contentType=contentType, primary=primary)
         except ValueError:
             # Fixes issues with allow_discussion-field
-            return self.field.vocabulary.getTermByToken(value).value
+            try:
+                return self.field.vocabulary.getTermByToken(value).value
+            except LookupError as e:
+                logger.warning('LookupError: {0:s}'.format(str(e)))
+                return None
