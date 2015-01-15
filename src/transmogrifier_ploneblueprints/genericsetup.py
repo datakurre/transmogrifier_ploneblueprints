@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-# from io import BytesIO
-# import tarfile
+from io import BytesIO
+import tarfile
+from lxml import etree
 
 from plone import api
 from venusianconfiguration import configure
@@ -13,8 +14,6 @@ class GenericSetupSource(ConditionalBlueprint):
     def __iter__(self):
         for item in self.previous:
             yield item
-
-        # prefix = self.options.get('prefix', '')
 
         steps = self.options.get('steps').split() or [
             # 'action-icons',
@@ -67,8 +66,6 @@ class GenericSetupSource(ConditionalBlueprint):
         portal_setup = api.portal.get_tool('portal_setup')
 
         for step in steps:
-            # fb = BytesIO(portal_setup.runExportStep(step)['tarball'])
-            # tar = tarfile.open(fileobj=fb, mode='r:gz')
 
             data = {
                 '_type': 'plone.genericsetup.tarball',
@@ -78,6 +75,38 @@ class GenericSetupSource(ConditionalBlueprint):
 
             if self.condition(data):
                 yield data
+
+
+# noinspection PyUnresolvedReferences
+def behead(tarball):
+    fb = BytesIO(tarball)
+    tar = tarfile.open(fileobj=fb, mode='r:gz')
+
+    fb2 = BytesIO()
+    tar2 = tarfile.open(fileobj=fb2, mode='w:gz')
+
+    for info in tar:
+        file_ = tar.extractfile(info)
+        root = etree.fromstring(file_.read())
+
+        # Magic happens
+
+        tar2.addfile(info, BytesIO(etree.tostring(root)))
+    tar2.close()
+
+    return fb2.getvalue()
+
+
+
+@configure.transmogrifier.blueprint.component(name='plone.genericsetup.behead')
+class GenericSetupBehead(ConditionalBlueprint):
+
+    def __iter__(self):
+        prefix = self.options.get('prefix')
+        for item in self.previous:
+            if self.condition(item) and '_tarball' in item and prefix:
+                item['_tarball'] = behead(item['_tarball'])
+            yield item
 
 
 def import_tarball(portal_setup, item):
