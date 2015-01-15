@@ -47,16 +47,20 @@ def set_uuid(ob, uuid):
         # DX
         if HAS_DEXTERITY_REFERENCEABLE:
             if DX.IReferenceable.providedBy(ob):
-                ob._uncatalogUID(api.portal.get())
+                uid_catalog = api.portal.get_tool('uid_catalog')
+                path = '/'.join(ob.getPhysicalPath())
+                uid_catalog.uncatalog_object(path)
         # noinspection PyArgumentList
         IMutableUUID(ob).set(str(uuid))
         if HAS_DEXTERITY_REFERENCEABLE:
             if DX.IReferenceable.providedBy(ob):
-                ob._catalogUID(api.portal.get())
+                uid_catalog = api.portal.get_tool('uid_catalog')
+                path = '/'.join(ob.getPhysicalPath())
+                uid_catalog.catalog_object(ob, path)
     elif HAS_ARCHETYPES:
         if AT.IReferenceable.providedBy(ob):
             # AT
-            ob._uncatalogUID(ob)
+            ob._uncatalogUID(api.portal.get())
             ob._setUID(uuid)
 
 
