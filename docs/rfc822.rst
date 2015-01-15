@@ -13,17 +13,19 @@ Exporting content
 
     >>> pipeline = """
     ... [transmogrifier]
-    ... include = plone.export.content
+    ... include = plone.export.content.rfc822
     ... pipeline =
-    ...     plone.export.content.search
-    ...     plone.export.content.get_object
-    ...     plone.export.content.marshall
+    ...     plone.export.content.source
+    ...     plone.export.content.rfc822
     ...     stringify
     ...     logger
     ...
+    ... [plone.export.content.rfc822]
+    ... pipeline -= plone.export.content.rfc822.send
+    ...
     ... [stringify]
     ... blueprint = transmogrifier.set
-    ... message = python:item['message'].as_string(unixfrom=False)
+    ... message = python:item['_rfc822'].as_string(unixfrom=False)
     ...
     ... [logger]
     ... blueprint = transmogrifier.logger
@@ -53,7 +55,8 @@ Exporting content
     presentation: False
     tableContents: False
     MIME-Version: 1.0
-    Content-Type: text/html
+    Content-Type: text/html; path="/plone/my-content"; type="Document";
+     uuid="..."
     <BLANKLINE>
     <p>Hello world</p>
 
@@ -62,30 +65,28 @@ Importing content
     >>> pipeline = """
     ... [transmogrifier]
     ... include =
-    ...     plone.export.content
-    ...     plone.import.content
+    ...     ploneblueprints.tests.rfc822
+    ...     plone.import.content.rfc822
     ... pipeline =
-    ...     plone.export.content.search
-    ...     plone.export.content.get_type
-    ...     plone.export.content.get_path
-    ...     plone.export.content.get_object
-    ...     plone.export.content.behead
-    ...     plone.export.content.marshall
-    ...
+    ...     plone.export.content.source
+    ...     plone.export.content.rfc822
     ...     modify
-    ...
-    ...     plone.export.content.invert
-    ...     plone.import.content.codec
-    ...     plone.import.content.fix_dublincore
-    ...     plone.import.content.cleanup
-    ...     plone.import.content.folders
-    ...     plone.import.content.constructor
-    ...     plone.import.content.demarshall
+    ...     invert
+    ...     plone.import.content.rfc822
     ... prefix = /plone
+    ...
+    ... [plone.import.content.rfc822]
+    ... pipeline -=
+    ...     plone.import.content.rfc822.source
+    ...     plone.import.content.rfc822.get_params
     ...
     ... [modify]
     ... blueprint = transmogrifier.set
     ... _path = python:item['_path'] + '-imported'
+    ...
+    ... [invert]
+    ... blueprint = transmogrifier.invert
+    ... key = _rfc822
     ... """
     ...
     >>> registerConfiguration('ploneblueprints.tests.rfc822.import', pipeline)

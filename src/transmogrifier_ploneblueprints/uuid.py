@@ -56,7 +56,7 @@ def set_uuid(ob, uuid):
     elif HAS_ARCHETYPES:
         if AT.IReferenceable.providedBy(ob):
             # AT
-            ob._uncatalogUID()
+            ob._uncatalogUID(ob)
             ob._setUID(uuid)
 
 
