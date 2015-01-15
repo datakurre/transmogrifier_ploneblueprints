@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-
-# plone/app/contenttypes/migration/topics.py
-# by mauritsvanrees, jensens, pbauer
+from copy import deepcopy
 import json
 import logging
 
+import Acquisition
+from plone.rfc822 import constructMessage
 from plone.rfc822.defaultfields import BaseFieldMarshaler
 from plone.rfc822.interfaces import IFieldMarshaler
 from venusianconfiguration import configure
@@ -13,6 +13,13 @@ from plone import api
 from zope import schema
 from zope.interface import Interface
 from zope.interface import implementer
+from zope.schema import getFieldNamesInOrder
+
+from transmogrifier.blueprints import ConditionalBlueprint
+from transmogrifier_ploneblueprints.rfc822 import marshall
+
+# plone/app/contenttypes/migration/topics.py
+# by mauritsvanrees, jensens, pbauer
 
 logger = logging.getLogger('transmogrifier')
 prefix = "plone.app.querystring"
@@ -109,19 +116,22 @@ class CriterionConverter(object):
 
         return operation
 
-    def add_to_formquery(self, formquery, index, operation, query_value):
+    def add_to_form_query(self, form_query, index, operation, query_value):
         row = {'i': index,
                'o': operation}
         if query_value is not None:
             row['v'] = query_value
-        formquery.append(row)
+        form_query.append(row)
 
-    def __call__(self, formquery, criterion, registry):
+    def __call__(self, form_query, criterion, registry):
         criteria = criterion.getCriteriaItems()
         if not criteria:
             logger.warn("Ignoring empty criterion %s.", criterion)
             return
         for index, value in criteria:
+            # Add unknown indexes to invalid form_query
+            unknown_index = None
+
             # Check if the index is known and enabled as criterion index.
             if index == 'Type':
                 # Try to replace Type by portal_type
@@ -129,7 +139,8 @@ class CriterionConverter(object):
                 value = self.switch_type_to_portal_type(value, criterion)
 
             if not self.is_index_known(registry, index):
-                # if not known, Subject might suffice
+                # if not known, handle like Subject
+                unknown_index = index
                 index = 'Subject'
 
             self.is_index_enabled(registry, index)
@@ -153,8 +164,13 @@ class CriterionConverter(object):
             # Get the value that we will query for.
             query_value = self.get_query_value(value, index, criterion)
 
-            # Add a row to the form query.
-            self.add_to_formquery(formquery, index, operation, query_value)
+            # Add a row to the formquery.
+            if not unknown_index:
+                self.add_to_form_query(form_query,
+                                       index, operation, query_value)
+            else:
+                self.add_to_form_query(form_query,
+                                       unknown_index, operation, query_value)
 
 
 class ATDateCriteriaConverter(CriterionConverter):
@@ -179,7 +195,7 @@ class ATDateCriteriaConverter(CriterionConverter):
     values ourselves instead of translating the values back and forth.
     """
 
-    def __call__(self, formquery, criterion, registry):  # noqa
+    def __call__(self, form_query, criterion, registry):  # noqa
         if criterion.value is None:
             logger.warn("Ignoring empty criterion %s.", criterion)
             return
@@ -206,12 +222,12 @@ class ATDateCriteriaConverter(CriterionConverter):
                 # TODO just ignore it?
                 raise ValueError(INVALID_OPERATION % (operation, criterion))
 
-            # Add a row to the form query.
+            # Add a row to the formquery.
             row = {'i': field,
                    'o': operation}
             if value is not None:
                 row['v'] = value
-            formquery.append(row)
+            form_query.append(row)
 
         operation = criterion.getOperation()
         if operation == 'within_day':
@@ -298,14 +314,14 @@ class ATPathCriterionConverter(CriterionConverter):
                 raw[index] = path + '::1'
         return raw
 
-    def add_to_formquery(self, formquery, index, operation, query_value):
+    def add_to_form_query(self, form_query, index, operation, query_value):
         if query_value is None:
             return
         for value in query_value:
             row = {'i': index,
                    'o': operation,
                    'v': value}
-            formquery.append(row)
+            form_query.append(row)
 
 
 class ATBooleanCriterionConverter(CriterionConverter):
@@ -325,7 +341,7 @@ class ATBooleanCriterionConverter(CriterionConverter):
             code = 'isTrue'
         return "%s.operation.boolean.%s" % (prefix, code)
 
-    def __call__(self, formquery, criterion, registry):
+    def __call__(self, form_query, criterion, registry):
         criteria = criterion.getCriteriaItems()
         if not criteria:
             return
@@ -347,10 +363,10 @@ class ATBooleanCriterionConverter(CriterionConverter):
                 logger.error(INVALID_OPERATION % (operation, criterion))
                 # TODO: raise an Exception?
                 continue
-            # Add a row to the form query.
+            # Add a row to the formquery.
             row = {'i': index,
                    'o': operation}
-            formquery.append(row)
+            form_query.append(row)
 
 
 class ATDateRangeCriterionConverter(CriterionConverter):
@@ -773,14 +789,41 @@ class MockRegistry(object):
             raise KeyError(key)
 
 
+def is_index_known(registry, index):
+    # Is the index registered as criterion index?
+    key = '%s.field.%s' % (prefix, index)
+    try:
+        registry.get(key)
+    except KeyError:
+        logger.warn("Index %s is no criterion index. Registry gives "
+                    "KeyError: %s", index, key)
+        return False
+    return True
+
+
+def is_subtopic(ob):
+    return bool(
+        getattr(Acquisition.aq_base(Acquisition.aq_parent(ob)),
+                'portal_type', None) == 'Topic'
+    )
+
+
+def get_criteria(ob):
+    if is_subtopic(ob):
+        for criterion in get_criteria(Acquisition.aq_parent(ob)):
+            yield criterion
+    for criterion in ob.listCriteria():
+        yield criterion
+
+
 def convert(topic):
     sort_reversed = False
     sort_on = None
-    criteria = topic.listCriteria()
+    criteria = list(get_criteria(topic))
     data = {'plone': {'app': {'querystring': {'field': MOCK_FIELDS,
                                               'operation': MOCK_OPERATIONS}}}}
     registry = MockRegistry(data)
-    formquery = []
+    form_query = []
 
     for criterion in criteria:
         type_ = criterion.__class__.__name__
@@ -795,13 +838,30 @@ def convert(topic):
             msg = 'Unsupported criterion %s' % type_
             logger.error(msg)
             raise ValueError(msg)
-        converter(formquery, criterion, registry)
+        converter(form_query, criterion, registry)
 
-    return formquery, sort_reversed, sort_on
+    seen_indexes = []
+    form_query_valid = []
+    form_query_invalid = []
+
+    for criterion in reversed(form_query):
+        if criterion['i'] in seen_indexes:
+            continue
+        seen_indexes.append(criterion['i'])
+        if is_index_known(registry, criterion['i']):
+            form_query_valid.insert(0, criterion)
+        else:
+            form_query_invalid.insert(0, criterion)
+
+    return form_query_valid, form_query_invalid, sort_reversed, sort_on
 
 
 class IMockCollection(Interface):
     query = schema.List(
+        value_type=schema.Dict(value_type=schema.Field(),
+                               key_type=schema.TextLine()),
+    )
+    query_invalid = schema.List(
         value_type=schema.Dict(value_type=schema.Field(),
                                key_type=schema.TextLine()),
     )
@@ -812,8 +872,9 @@ class IMockCollection(Interface):
 @implementer(IMockCollection)
 class MockCollection(object):
 
-    def __init__(self, query, sort_reversed, sort_on, *args):
+    def __init__(self, query, query_invalid, sort_reversed, sort_on, *args):
         self.query = query
+        self.query_invalid = query_invalid
         self.sort_reversed = sort_reversed
         self.sort_on = sort_on
 
@@ -830,6 +891,7 @@ class DictionaryFieldMarshaler(BaseFieldMarshaler):
             return super(DictionaryFieldMarshaler, self).encode(
                 value, charset=charset, primary=primary)
 
+    # noinspection PyPep8Naming
     def decode(self, value, message=None, charset="utf-8",
                contentType=None, primary=False):
         if value:
@@ -838,3 +900,51 @@ class DictionaryFieldMarshaler(BaseFieldMarshaler):
             return super(DictionaryFieldMarshaler, self).decode(
                 value, message=message, charset=charset,
                 contentType=contentType, primary=primary)
+
+
+def marshall_topic_as_collection(ob):
+    # noinspection PyPep8Naming
+    def getNamesAndFieldsInOrder(iface):
+        for field_name in getFieldNamesInOrder(iface):
+            yield field_name, iface[field_name]
+
+    return constructMessage(
+        MockCollection(*convert(ob)),
+        getNamesAndFieldsInOrder(IMockCollection)
+    )
+
+
+def has_subtopics(ob):
+    # noinspection PyUnresolvedReferences
+    return bool([
+        sub_ob for sub_ob in
+        map(Acquisition.aq_base, ob.objectValues())
+        if getattr(sub_ob, 'portal_type', None) == 'Topic'
+    ])
+
+
+@configure.transmogrifier.blueprint.component(name='plone.rfc822.marshall_collection')  # noqa
+class RFC822MarshallTopicsAsCollections(ConditionalBlueprint):
+    def __iter__(self):
+        key = self.options.get('key')
+        for item in self.previous:
+            if self.condition(item):
+                if '_object' in item and key:
+                    item[key] = marshall(item['_object'])
+
+                # For Topics, also marshall required fields for collections
+                if item['_type'] == 'Topic':
+                    ob = item['_object']
+                    message = marshall_topic_as_collection(ob)
+                    for name in getFieldNamesInOrder(IMockCollection):
+                        item[key][name] = message[name]
+
+                    # Because sub-collections are not supported, re-create
+                    # the main topic as separate collection...
+                    if has_subtopics(ob):
+                        id_ = item['_path'].split('/')[-1]
+                        while id_ in ob.objectIds():
+                            id_ += '-{0:s}'.format(id_)
+                        item['_path'] += '/{0:s}'.format(id_)
+
+            yield item

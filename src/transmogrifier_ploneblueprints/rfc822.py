@@ -5,13 +5,18 @@ import Acquisition
 import pkg_resources
 from plone import api
 from plone.dexterity.interfaces import IDexterityFTI
+from plone.dexterity.interfaces import IDexterityContent
 from plone.dexterity.utils import iterSchemata
 from plone.rfc822 import initializeObject
 from plone.rfc822 import initializeObjectFromSchemata
 from plone.rfc822 import constructMessage
 from plone.rfc822 import constructMessageFromSchemata
-from zope.schema import getFieldNamesInOrder
+from plone.rfc822.defaultfields import UnicodeValueFieldMarshaler
+from plone.rfc822.interfaces import IFieldMarshaler
+from zope.component import adapter
+from zope.interface import implementer
 from venusianconfiguration import configure
+from zope.schema.interfaces import IChoice
 
 from transmogrifier_ploneblueprints.utils import traverse
 from transmogrifier.blueprints import ConditionalBlueprint
@@ -51,27 +56,6 @@ class RFC822Marshall(ConditionalBlueprint):
             if self.condition(item):
                 if '_object' in item and key:
                     item[key] = marshall(item['_object'])
-
-                # Marshall Topic criteria as Collection compatible header
-                if item['_type'] == 'Topic':
-                    from transmogrifier_ploneblueprints.rfc822_topic import (
-                        IMockCollection, MockCollection, convert)
-
-                    ob = item['_object']
-
-                    # noinspection PyPep8Naming
-                    def getNamesAndFieldsInOrder(iface):
-                        for field_name in getFieldNamesInOrder(iface):
-                            yield field_name, iface[field_name]
-
-                    message = constructMessage(
-                        MockCollection(*convert(ob)),
-                        getNamesAndFieldsInOrder(IMockCollection)
-                    )
-
-                    for name in getFieldNamesInOrder(IMockCollection):
-                        item[key][name] = message[name]
-
             yield item
 
 
@@ -101,3 +85,19 @@ class RFC822Demarshall(ConditionalBlueprint):
                 if ob is not portal:
                     demarshall(ob, item)
             yield item
+
+
+@configure.adapter.factory()
+@implementer(IFieldMarshaler)
+@adapter(IDexterityContent, IChoice)
+class ChoiceValueFieldMarshaler(UnicodeValueFieldMarshaler):
+    # noinspection PyPep8Naming
+    def decode(self, value, message=None, charset='utf-8', contentType=None,
+               primary=False):
+        try:
+            return super(ChoiceValueFieldMarshaler, self).decode(
+                value, message=message, charset=charset,
+                contentType=contentType, primary=primary)
+        except ValueError:
+            # Fixes issues with allow_discussion-field
+            return self.field.vocabulary.getTermByToken(value).value
