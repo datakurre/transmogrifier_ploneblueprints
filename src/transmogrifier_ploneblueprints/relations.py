@@ -39,7 +39,7 @@ if HAS_RELATIONFIELD:
         def decode(self, value, message=None, charset='utf-8',
                    contentType=None, primary=False):
             try:
-                uuid = int(value.decode(charset))
+                uuid = value.decode(charset)
             except TypeError, e:
                 raise ValueError(e)
 
@@ -48,7 +48,7 @@ if HAS_RELATIONFIELD:
             for brain in portal_catalog.unrestrictedSearchResults(UID=uuid):
                 # noinspection PyProtectedMember
                 ob = brain._unrestrictedGetObject()
-                intid = intids.queryObject(ob)
+                intid = intids.queryId(ob)
                 if intid is None:
                     intid = intids.register(ob)
                 return RelationValue(intid)
