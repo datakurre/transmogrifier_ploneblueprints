@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from copy import deepcopy
 import json
 import logging
 
@@ -17,6 +16,7 @@ from zope.schema import getFieldNamesInOrder
 
 from transmogrifier.blueprints import ConditionalBlueprint
 from transmogrifier_ploneblueprints.rfc822 import marshall
+
 
 # plone/app/contenttypes/migration/topics.py
 # by mauritsvanrees, jensens, pbauer
