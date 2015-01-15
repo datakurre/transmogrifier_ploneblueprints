@@ -9,7 +9,7 @@ class GetGroups(Blueprint):
     def __iter__(self):
         for item in self.previous:
             yield item
-       
+
         portal = api.portal.get()
         pas = portal.acl_users
         source_groups = pas.source_groups
@@ -31,23 +31,24 @@ class GetGroups(Blueprint):
             }
             yield item
 
+
 @configure.transmogrifier.blueprint.component(name='plone.groups.set')
 class SetGroups(ConditionalBlueprint):
     def __iter__(self):
         portal = api.portal.get()
         pas = portal.acl_users
-        
+
         for item in self.previous:
             if self.condition(item):
                 group_id = item['id']
                 roles = item['roles']
                 members = item['members']
                 properties = item['properties']
-               
+
                 if group_id not in pas.source_groups.getGroupIds():
                     pas.source_groups.addGroup(group_id)
 
-                pas.portal_role_manager.assignRolesToPrincipal(roles, 
+                pas.portal_role_manager.assignRolesToPrincipal(roles,
                                                                group_id)
 
                 for member in members:
@@ -56,7 +57,7 @@ class SetGroups(ConditionalBlueprint):
                 # properties None for default groups
                 if properties is not None:
                     pas.mutable_properties._storage[group_id] = properties
-                    pas.source_groups.updateGroup(group_id, 
-                                                  properties['title'], 
+                    pas.source_groups.updateGroup(group_id,
+                                                  properties['title'],
                                                   properties['description'])
             yield item
