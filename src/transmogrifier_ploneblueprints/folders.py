@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import importlib
+import Acquisition
 
 from plone import api
 from plone.dexterity.interfaces import IDexterityFTI
@@ -104,6 +105,46 @@ def ensure_correct_class(ob):
         key = '.'.join([fti.product, fti.id])
         ob.__class__ = _types[key]['klass']
         ob._p_changed = True
+
+
+@configure.transmogrifier.blueprint.component(name='plone.gopip.get')
+class GetObjectPositionInParent(ConditionalBlueprint):
+    # noinspection PyUnresolvedReferences
+    def __iter__(self):
+        key = self.options.get('key', '_gopip')
+        for item in self.previous:
+            if self.condition(item):
+                if '_object' in item and key:
+                    ob = item['_object']
+                    id_ = ob.getId()
+                    parent = Acquisition.aq_parent(ob)
+                    if hasattr(Acquisition.aq_base(ob), 'getObjectPosition'):
+                        item[key] = parent.getObjectPosition(id_)
+                    else:
+                        item[key] = None
+            yield item
+
+
+@configure.transmogrifier.blueprint.component(name='plone.gopip.set')
+class SetObjectPositionInParent(ConditionalBlueprint):
+    # noinspection PyUnresolvedReferences
+    def __iter__(self):
+        key = self.options.get('key', '_gopip')
+        for item in self.previous:
+            if self.condition(item):
+                position = item.get('key')
+                if position is None:
+                    continue
+                if '_object' in item and key:
+                    ob = item['_object']
+                    id_ = ob.getId()
+                    parent = Acquisition.aq_parent(ob)
+                    if hasattr(Acquisition.aq_base(ob),
+                               'moveObjectToPositoin'):
+                        item[key] = parent.moveObjectToPosition(id_, position)
+                    else:
+                        item[key] = None
+            yield item
 
 
 @configure.transmogrifier.blueprint.component(name='plone.portal_type')
