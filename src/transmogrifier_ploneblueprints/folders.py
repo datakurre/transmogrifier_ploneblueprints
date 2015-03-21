@@ -161,7 +161,7 @@ class PortalType(ConditionalBlueprint):
                 except KeyError:
                     pass
                 else:
-                    if ob.portal_type == folder_type:
+                    if portal_type == folder_type:
                         # Skip folder_type, because Folders-blueprint
                         # would cause all folderish-types to be b0rked
                         continue
