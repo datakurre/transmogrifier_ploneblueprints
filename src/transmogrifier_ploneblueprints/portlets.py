@@ -57,11 +57,13 @@ def get_portlet_assignment_xml(context):
                                     IPortletAssignmentMapping)
         if mapping is None:
             continue
-        import pdb; pdb.set_trace()
 
         mapping = mapping.__of__(context)
         extract_mapping(
-            doc, node, manager_name, CONTEXT_CATEGORY, u"/", mapping)
+            doc, node, manager_name, CONTEXT_CATEGORY,
+            '/'.join(context.getPhysicalPath()), mapping
+        )
+    doc.appendChild(node)
     xml = doc.toprettyxml(' ')
     doc.unlink()
     print xml
