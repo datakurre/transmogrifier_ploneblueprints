@@ -97,7 +97,6 @@ def behead(tarball):
     return fb2.getvalue()
 
 
-
 @configure.transmogrifier.blueprint.component(name='plone.genericsetup.behead')
 class GenericSetupBehead(ConditionalBlueprint):
 

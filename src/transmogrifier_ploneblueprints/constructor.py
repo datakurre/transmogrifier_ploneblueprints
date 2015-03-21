@@ -16,6 +16,19 @@ import logging
 logger = logging.getLogger('transmogrifier')
 
 
+def _constructInstance(fti, context, id_):
+    try:
+        obj = fti._constructInstance(context, id_)
+    except Exception:
+        import traceback
+        traceback.print_exc()
+        print "Fix issue manually and continue to retry..."
+        import pdb
+        pdb.set_trace()
+        obj = fti._constructInstance(context, id_)
+    return obj
+
+
 def constructInstance(item, type_key_matcher, path_key_matcher, required):
     portal = api.portal.get()
     types_tool = api.portal.get_tool('portal_types')
@@ -52,13 +65,7 @@ def constructInstance(item, type_key_matcher, path_key_matcher, required):
     if getattr(Acquisition.aq_base(context), id_, None) is not None:  # exists
         return
 
-    # noinspection PyProtectedMember
-    try:
-        obj = fti._constructInstance(context, id_)
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        import pdb; pdb.set_trace()
+    obj = _constructInstance(fti, context, id_)
 
     # For CMF <= 2.1 (aka Plone 3)
     if hasattr(fti, '_finishConstruction'):
