@@ -152,6 +152,7 @@ class PortalType(ConditionalBlueprint):
     def __iter__(self):
         portal = api.portal.get()
         key = self.options.get('key', '_type')
+        folder_type = self.options.get('folder-type', 'Folder')
         for item in self.previous:
             if self.condition(item):
                 try:
@@ -160,6 +161,10 @@ class PortalType(ConditionalBlueprint):
                 except KeyError:
                     pass
                 else:
+                    if ob.portal_type == folder_type:
+                        # Skip folder_type, because Folders-blueprint
+                        # would cause all folderish-types to be b0rked
+                        continue
                     if ob.portal_type != portal_type and ob is not portal:
                         ob.portal_type = portal_type
                         ensure_correct_class(ob)
