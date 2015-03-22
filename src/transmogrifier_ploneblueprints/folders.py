@@ -102,8 +102,8 @@ def ensure_correct_class(ob):
         klass = getattr(module, class_name)
     elif HAS_ARCHETYPES:
         key = '.'.join([fti.product, fti.id])
-        klass = _types[key]['klass']
-    if ob.__class__ != klass:
+        klass = _types.get(key, {}).get('klass', None)
+    if klass is not None and ob.__class__ != klass:
         ob.__class__ = klass
         ob._p_changed = True
 
