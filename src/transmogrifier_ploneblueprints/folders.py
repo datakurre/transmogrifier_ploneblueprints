@@ -99,12 +99,22 @@ def ensure_correct_class(ob):
     if IDexterityFTI.providedBy(fti):
         module_name, class_name = fti.klass.rsplit('.', 1)
         module = importlib.import_module(module_name)
-        ob.__class__ = getattr(module, class_name)
-        ob._p_changed = True
+        klass = getattr(module, class_name)
     elif HAS_ARCHETYPES:
         key = '.'.join([fti.product, fti.id])
-        ob.__class__ = _types[key]['klass']
+        klass = _types[key]['klass']
+    if ob.__class__ != klass:
+        ob.__class__ = klass
         ob._p_changed = True
+
+        # XXX: This may not work or may have strange side-effects:
+        #
+        # http://blog.redturtle.it/2013/02/25/
+        # migrating-dexterity-items-to-dexterity-containers
+        #
+        # This would work if the class change is done before the
+        # wrong class is committed. Also, this has been seen to work
+        # when the target object does not have any children yet.
 
 
 @configure.transmogrifier.blueprint.component(name='plone.gopip.get')
@@ -161,11 +171,10 @@ class PortalType(ConditionalBlueprint):
                 except KeyError:
                     pass
                 else:
-                    if portal_type == folder_type:
+                    if ob is portal or portal_type == folder_type:
                         # Skip folder_type, because Folders-blueprint
                         # would cause all folderish-types to be b0rked
                         continue
-                    if ob.portal_type != portal_type and ob is not portal:
-                        ob.portal_type = portal_type
-                        ensure_correct_class(ob)
+                    ob.portal_type = portal_type
+                    ensure_correct_class(ob)
             yield item
