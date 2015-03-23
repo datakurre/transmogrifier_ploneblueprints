@@ -1,18 +1,19 @@
 # -*- coding: utf-8 -*-
 from Products.GenericSetup.utils import PrettyDocument
-from plone.app.portlets.exportimport.interfaces import \
-    IPortletAssignmentExportImportHandler
+from io import BytesIO
+from plone import api
+from plone.app.portlets.exportimport.interfaces import IPortletAssignmentExportImportHandler  # noqa
 from plone.app.portlets.interfaces import IPortletTypeInterface
 from plone.portlets.constants import CONTEXT_CATEGORY
+from plone.portlets.interfaces import IPortletAssignmentMapping
 from plone.portlets.interfaces import IPortletAssignmentSettings
 from plone.portlets.interfaces import IPortletManager
-from plone.portlets.interfaces import IPortletAssignmentMapping
+from transmogrifier.blueprints import ConditionalBlueprint
 from venusianconfiguration import configure
 from zope.component import getUtilitiesFor
 from zope.component import queryMultiAdapter
 from zope.interface import providedBy
-
-from transmogrifier.blueprints import ConditionalBlueprint
+import tarfile
 
 
 def extract_mapping(doc, node, manager_name, category, key, mapping):
@@ -49,7 +50,20 @@ def extract_mapping(doc, node, manager_name, category, key, mapping):
             node.appendChild(child)
 
 
-def get_portlet_assignment_xml(context):
+def patch_xml(xml, prefix=None):
+    portal = '/'.join(api.portal.get().getPhysicalPath())
+    if prefix is not None and prefix.startswith(portal):
+        xml = xml.replace('>{0:s}/'.format(prefix[len(portal):]), '>/')
+
+    # This must be a bug in p.a.portlets where it exports assignments, which it
+    # cannot import, empty tag cannot be interpreted into an integer
+    xml = xml.replace('<property name="limit"/>',
+                      '<property name="limit">0</property>')
+
+    return xml
+
+
+def get_portlet_assignment_xml(context, prefix):
     doc = PrettyDocument()
     node = doc.createElement('portlets')
     for manager_name, manager in getUtilitiesFor(IPortletManager):
@@ -59,14 +73,18 @@ def get_portlet_assignment_xml(context):
             continue
 
         mapping = mapping.__of__(context)
-        extract_mapping(
-            doc, node, manager_name, CONTEXT_CATEGORY,
-            '/'.join(context.getPhysicalPath()), mapping
-        )
+
+        key = '/'.join(context.getPhysicalPath())
+        if key.startswith(prefix):
+            key = key[len(prefix):]
+        key = key or '/'
+
+        extract_mapping(doc, node, manager_name, CONTEXT_CATEGORY,
+                        key, mapping)
+
     doc.appendChild(node)
-    xml = doc.toprettyxml(' ')
+    xml = patch_xml(doc.toprettyxml(' '), prefix)
     doc.unlink()
-    print xml
     return xml
 
 
@@ -74,9 +92,39 @@ def get_portlet_assignment_xml(context):
 class GetPortlets(ConditionalBlueprint):
     def __iter__(self):
         key = self.options.get('key', '_portlets')
+        prefix = self.options.get('prefix', '')  # prefix to remove
         for item in self.previous:
             if self.condition(item):
                 if '_object' in item.keys():
                     ob = item['_object']
-                    item[key] = get_portlet_assignment_xml(ob) or None
+                    item[key] = get_portlet_assignment_xml(ob, prefix) or None
+            yield item
+
+
+def get_tarball(files):
+    fb = BytesIO()
+    tar = tarfile.open(fileobj=fb, mode='w:gz')
+
+    for filename, filedata in files.items():
+        info = tarfile.TarInfo(filename)
+        info.size = len(filedata)
+        tar.addfile(info, BytesIO(filedata))
+
+    tar.close()
+    return fb.getvalue()
+
+
+@configure.transmogrifier.blueprint.component(name='plone.portlets.set')
+class SetPortlets(ConditionalBlueprint):
+    def __iter__(self):
+        key = self.options.get('key', '_portlets')
+        portal_setup = api.portal.get_tool('portal_setup')
+
+        for item in self.previous:
+            if self.condition(item):
+                if key in item.keys():
+                    xml = patch_xml(item[key])
+                    tarball = get_tarball({'portlets.xml': xml})
+                    portal_setup.runAllImportStepsFromProfile(
+                        None, purge_old=False, archive=tarball)
             yield item
