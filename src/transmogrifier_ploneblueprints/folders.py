@@ -139,21 +139,24 @@ class GetObjectPositionInParent(ConditionalBlueprint):
 class SetObjectPositionInParent(ConditionalBlueprint):
     # noinspection PyUnresolvedReferences
     def __iter__(self):
+        portal = api.portal.get()
         key = self.options.get('key', '_gopip')
         for item in self.previous:
             if self.condition(item):
-                position = item.get('key')
+                position = item.get(key)
                 if position is None:
                     continue
-                if '_object' in item and key:
-                    ob = item['_object']
+                try:
+                    ob = traverse(portal, item['_path'])
+                except KeyError:
+                    pass
+                if ob:
                     id_ = ob.getId()
                     parent = Acquisition.aq_parent(ob)
-                    if hasattr(Acquisition.aq_base(ob),
-                               'moveObjectToPositoin'):
-                        item[key] = parent.moveObjectToPosition(id_, position)
-                    else:
-                        item[key] = None
+                    if hasattr(Acquisition.aq_base(parent),
+                               'moveObjectToPosition'):
+                        parent.moveObjectToPosition(
+                            id_, position, suppress_events=False)
             yield item
 
 

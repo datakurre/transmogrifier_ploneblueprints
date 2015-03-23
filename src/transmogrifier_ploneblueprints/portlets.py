@@ -15,6 +15,9 @@ from zope.component import queryMultiAdapter
 from zope.interface import providedBy
 import tarfile
 
+import logging
+logger = logging.getLogger('transmogrifier')
+
 
 def extract_mapping(doc, node, manager_name, category, key, mapping):
     portlets_schemata = dict([
@@ -50,7 +53,7 @@ def extract_mapping(doc, node, manager_name, category, key, mapping):
             node.appendChild(child)
 
 
-def patch_xml(xml, prefix=None):
+def patch_portlets_xml(xml, prefix=None):
     portal = '/'.join(api.portal.get().getPhysicalPath())
     if prefix is not None and prefix.startswith(portal):
         xml = xml.replace('>{0:s}/'.format(prefix[len(portal):]), '>/')
@@ -83,7 +86,7 @@ def get_portlet_assignment_xml(context, prefix):
                         key, mapping)
 
     doc.appendChild(node)
-    xml = patch_xml(doc.toprettyxml(' '), prefix)
+    xml = patch_portlets_xml(doc.toprettyxml(' '), prefix)
     doc.unlink()
     return xml
 
@@ -114,6 +117,16 @@ def get_tarball(files):
     return fb.getvalue()
 
 
+def import_portlets(portal_setup, portlets_xml):
+    tarball = get_tarball({'portlets.xml': portlets_xml})
+    try:
+        portal_setup.runAllImportStepsFromProfile(
+            None, purge_old=False, archive=tarball)
+    except Exception as e:
+        logger.warn(portlets_xml)
+        logger.warn('Failed to assign portlets because of %s' % e)
+
+
 @configure.transmogrifier.blueprint.component(name='plone.portlets.set')
 class SetPortlets(ConditionalBlueprint):
     def __iter__(self):
@@ -123,8 +136,6 @@ class SetPortlets(ConditionalBlueprint):
         for item in self.previous:
             if self.condition(item):
                 if key in item.keys():
-                    xml = patch_xml(item[key])
-                    tarball = get_tarball({'portlets.xml': xml})
-                    portal_setup.runAllImportStepsFromProfile(
-                        None, purge_old=False, archive=tarball)
+                    portlets_xml = patch_portlets_xml(item[key])
+                    import_portlets(portal_setup, portlets_xml)
             yield item
