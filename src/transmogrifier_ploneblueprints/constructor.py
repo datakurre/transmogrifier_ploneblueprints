@@ -77,7 +77,13 @@ def constructInstance(item, type_key_matcher, path_key_matcher,
         item[path_key] = posixpath.join(container, obj.getId())
 
     if empty and obj.objectIds():
-        obj.manage_delObjects(obj.objectIds())
+        for obj_id in obj.objectIds():
+            try:
+                obj.manage_delObjects([obj_id])
+            except Exception, e:
+                logger.warn('Unable to clean %s because of %s' % (
+                    obj[obj_id], e
+                ))
 
 
 @configure.transmogrifier.blueprint.component(name='plone.constructor')
