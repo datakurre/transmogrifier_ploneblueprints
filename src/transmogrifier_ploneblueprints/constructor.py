@@ -29,6 +29,16 @@ def _constructInstance(fti, context, id_):
     return obj
 
 
+def cleanup(obj):
+    for obj_id in obj.objectIds():
+        try:
+            obj.manage_delObjects([obj_id])
+        except Exception, e:
+            logger.warn('Unable to clean %s because of %s' % (
+                obj[obj_id], e
+            ))
+
+
 def constructInstance(item, type_key_matcher, path_key_matcher,
                       required, empty=True):
     portal = api.portal.get()
@@ -77,13 +87,7 @@ def constructInstance(item, type_key_matcher, path_key_matcher,
         item[path_key] = posixpath.join(container, obj.getId())
 
     if empty and obj.objectIds():
-        for obj_id in obj.objectIds():
-            try:
-                obj.manage_delObjects([obj_id])
-            except Exception, e:
-                logger.warn('Unable to clean %s because of %s' % (
-                    obj[obj_id], e
-                ))
+        cleanup(obj)
 
 
 @configure.transmogrifier.blueprint.component(name='plone.constructor')
