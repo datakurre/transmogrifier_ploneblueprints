@@ -29,7 +29,8 @@ def _constructInstance(fti, context, id_):
     return obj
 
 
-def constructInstance(item, type_key_matcher, path_key_matcher, required):
+def constructInstance(item, type_key_matcher, path_key_matcher,
+                      required, empty=True):
     portal = api.portal.get()
     types_tool = api.portal.get_tool('portal_types')
 
@@ -75,6 +76,9 @@ def constructInstance(item, type_key_matcher, path_key_matcher, required):
     if obj.getId() != id_:
         item[path_key] = posixpath.join(container, obj.getId())
 
+    if empty and obj.objectIds():
+        obj.manage_delObjects(obj.objectIds())
+
 
 @configure.transmogrifier.blueprint.component(name='plone.constructor')
 class Constructor(ConditionalBlueprint):
@@ -83,9 +87,10 @@ class Constructor(ConditionalBlueprint):
                                   self.name, 'type', ('portal_type', 'Type'))
         path_key = defaultMatcher(self.options, 'path-key',
                                   self.name, 'path')
-        required = bool(self.options.get('required'))
+        required = bool(self.options.get('required', 0))
+        empty = bool(self.options.get('empty', 1))
 
         for item in self.previous:
             if self.condition(item):
-                constructInstance(item, type_key, path_key, required)
+                constructInstance(item, type_key, path_key, required, empty)
             yield item
