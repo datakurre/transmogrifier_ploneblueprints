@@ -10,8 +10,10 @@ from plone.rfc822 import constructMessage
 from plone.rfc822 import constructMessageFromSchemata
 from plone.rfc822.defaultfields import UnicodeValueFieldMarshaler
 from plone.rfc822.interfaces import IFieldMarshaler
+from plone.rfc822.interfaces import IPrimaryField
 from zope.component import adapter
 from zope.interface import implementer
+from zope.interface import alsoProvides
 from venusianconfiguration import configure
 from zope.schema.interfaces import IChoice
 
@@ -45,6 +47,17 @@ else:
     from plone.dexterity.interfaces import IDexterityContent
     from plone.dexterity.utils import iterSchemata
     HAS_DEXTERITY = True
+
+
+try:
+    pkg_resources.get_distribution('plone.app.contenttypes')
+except pkg_resources.DistributionNotFound:
+    HAS_PAC = False
+else:
+    from plone.app.contenttypes.behaviors.leadimage import ILeadImage
+    alsoProvides(ILeadImage['image'], IPrimaryField)
+    HAS_PAC = True
+
 
 def marshall(ob):
     types_tool = api.portal.get_tool('portal_types')
