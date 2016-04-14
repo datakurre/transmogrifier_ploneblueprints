@@ -63,7 +63,7 @@ def marshall(ob):
     types_tool = api.portal.get_tool('portal_types')
     fti = types_tool.get(ob.portal_type)
     # noinspection PyUnresolvedReferences
-    if IDexterityFTI.providedBy(fti):
+    if HAS_DEXTERITY and IDexterityFTI.providedBy(fti):
         # DX
         message = constructMessageFromSchemata(ob, iterSchemata(ob))
     elif HAS_ARCHETYPES and hasattr(Acquisition.aq_base(ob), 'schema'):
