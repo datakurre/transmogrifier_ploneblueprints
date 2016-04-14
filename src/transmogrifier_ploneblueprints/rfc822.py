@@ -4,17 +4,16 @@ from email.message import Message
 import Acquisition
 import pkg_resources
 from plone import api
-from plone.dexterity.interfaces import IDexterityFTI
-from plone.dexterity.interfaces import IDexterityContent
-from plone.dexterity.utils import iterSchemata
 from plone.rfc822 import initializeObject
 from plone.rfc822 import initializeObjectFromSchemata
 from plone.rfc822 import constructMessage
 from plone.rfc822 import constructMessageFromSchemata
 from plone.rfc822.defaultfields import UnicodeValueFieldMarshaler
 from plone.rfc822.interfaces import IFieldMarshaler
+from plone.rfc822.interfaces import IPrimaryField
 from zope.component import adapter
 from zope.interface import implementer
+from zope.interface import alsoProvides
 from venusianconfiguration import configure
 from zope.schema.interfaces import IChoice
 
@@ -34,11 +33,37 @@ else:
     HAS_ARCHETYPES = True
 
 
+try:
+    pkg_resources.get_distribution('plone.dexterity')
+except pkg_resources.DistributionNotFound:
+    HAS_DEXTERITY = False
+    class IDexterityFTI(object):
+        """Mock"""
+
+    class IDexterityContent(object):
+        """Mock"""
+else:
+    from plone.dexterity.interfaces import IDexterityFTI
+    from plone.dexterity.interfaces import IDexterityContent
+    from plone.dexterity.utils import iterSchemata
+    HAS_DEXTERITY = True
+
+
+try:
+    pkg_resources.get_distribution('plone.app.contenttypes')
+except pkg_resources.DistributionNotFound:
+    HAS_PAC = False
+else:
+    from plone.app.contenttypes.behaviors.leadimage import ILeadImage
+    alsoProvides(ILeadImage['image'], IPrimaryField)
+    HAS_PAC = True
+
+
 def marshall(ob):
     types_tool = api.portal.get_tool('portal_types')
     fti = types_tool.get(ob.portal_type)
     # noinspection PyUnresolvedReferences
-    if IDexterityFTI.providedBy(fti):
+    if HAS_DEXTERITY and IDexterityFTI.providedBy(fti):
         # DX
         message = constructMessageFromSchemata(ob, iterSchemata(ob))
     elif HAS_ARCHETYPES and hasattr(Acquisition.aq_base(ob), 'schema'):

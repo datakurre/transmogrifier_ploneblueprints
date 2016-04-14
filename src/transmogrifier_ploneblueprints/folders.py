@@ -3,7 +3,6 @@ import importlib
 import Acquisition
 
 from plone import api
-from plone.dexterity.interfaces import IDexterityFTI
 from venusianconfiguration import configure
 from transmogrifier.blueprints import ConditionalBlueprint
 from transmogrifier.utils import defaultMatcher
@@ -21,6 +20,16 @@ else:
     from Products.Archetypes.ArchetypeTool import _types
     HAS_ARCHETYPES = True
 
+try:
+    pkg_resources.get_distribution('plone.dexterity')
+except pkg_resources.DistributionNotFound:
+    HAS_DEXTERITY = False
+    class IDexterityFTI(object):
+        """Mock"""
+else:
+    # noinspection PyProtectedMember
+    from plone.dexterity.interfaces import IDexterityFTI
+    HAS_DEXTERITY = True
 
 # collective/transmogrifier/sections/folders.py
 # by rpatterson, optilude
@@ -142,10 +151,8 @@ class SetObjectPositionInParent(ConditionalBlueprint):
         portal = api.portal.get()
         key = self.options.get('key', '_gopip')
         for item in self.previous:
-            if self.condition(item):
-                position = item.get(key)
-                if position is None:
-                    continue
+            position = item.get(key)
+            if self.condition(item) and position is not None:
                 try:
                     ob = traverse(portal, item['_path'])
                 except KeyError:
@@ -174,10 +181,9 @@ class PortalType(ConditionalBlueprint):
                 except KeyError:
                     pass
                 else:
-                    if ob is portal or portal_type == folder_type:
-                        # Skip folder_type, because Folders-blueprint
-                        # would cause all folderish-types to be b0rked
-                        continue
-                    ob.portal_type = portal_type
-                    ensure_correct_class(ob)
+                    # Skip folder_type, because Folders-blueprint
+                    # would cause all folderish-types to be b0rked
+                    if ob is not portal and portal_type != folder_type:
+                        ob.portal_type = portal_type
+                        ensure_correct_class(ob)
             yield item

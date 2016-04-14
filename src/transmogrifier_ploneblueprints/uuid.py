@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
+from __future__ import absolute_import
 from plone import api
-from plone.dexterity.interfaces import IDexterityFTI
 from venusianconfiguration import configure
 from transmogrifier.blueprints import ConditionalBlueprint
 from transmogrifier_ploneblueprints.utils import traverse
 from plone.uuid.interfaces import IUUID
 from plone.uuid.interfaces import IMutableUUID
 
+import Acquisition
+import uuid
 import pkg_resources
 
 try:
@@ -16,6 +18,16 @@ except pkg_resources.DistributionNotFound:
 else:
     from Products.Archetypes import interfaces as AT
     HAS_ARCHETYPES = True
+
+try:
+    pkg_resources.get_distribution('plone.dexterity')
+except pkg_resources.DistributionNotFound:
+    HAS_DEXTERITY = False
+    class IDexterityFTI(object):
+        """Mock"""
+else:
+    from plone.dexterity.interfaces import IDexterityFTI
+    HAS_DEXTERITY = True
 
 try:
     pkg_resources.get_distribution('plone.app.referenceablebehavior')
@@ -33,9 +45,13 @@ class GetUUID(ConditionalBlueprint):
         for item in self.previous:
             if self.condition(item):
                 ob = traverse(portal, item['_path'])
-                uuid = IUUID(ob, None)
+                uuid_ = IUUID(ob, None)
                 if uuid is not None:
-                    item['_uuid'] = uuid
+                    item['_uuid'] = uuid_
+                elif hasattr(Acquisition.aq_base(ob), 'UID'):
+                    item['_uuid'] = Acquisition.aq_base(ob).UID()
+                if not item.get('_uuid'):
+                    item['_uuid'] = str(uuid.uuid4()).replace('-', '')
             yield item
 
 
