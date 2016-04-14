@@ -183,10 +183,9 @@ class PortalType(ConditionalBlueprint):
                 except KeyError:
                     pass
                 else:
-                    if ob is portal or portal_type == folder_type:
-                        # Skip folder_type, because Folders-blueprint
-                        # would cause all folderish-types to be b0rked
-                        continue
-                    ob.portal_type = portal_type
-                    ensure_correct_class(ob)
+                    # Skip folder_type, because Folders-blueprint
+                    # would cause all folderish-types to be b0rked
+                    if ob is not portal and portal_type != folder_type:
+                        ob.portal_type = portal_type
+                        ensure_correct_class(ob)
             yield item
