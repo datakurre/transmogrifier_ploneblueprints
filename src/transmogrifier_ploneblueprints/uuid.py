@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import absolute_import
 from plone import api
 from venusianconfiguration import configure
 from transmogrifier.blueprints import ConditionalBlueprint
@@ -6,6 +7,8 @@ from transmogrifier_ploneblueprints.utils import traverse
 from plone.uuid.interfaces import IUUID
 from plone.uuid.interfaces import IMutableUUID
 
+import Acquisition
+import uuid
 import pkg_resources
 
 try:
@@ -42,9 +45,13 @@ class GetUUID(ConditionalBlueprint):
         for item in self.previous:
             if self.condition(item):
                 ob = traverse(portal, item['_path'])
-                uuid = IUUID(ob, None)
+                uuid_ = IUUID(ob, None)
                 if uuid is not None:
-                    item['_uuid'] = uuid
+                    item['_uuid'] = uuid_
+                elif hasattr(Acquisition.aq_base(ob), 'UID'):
+                    item['_uuid'] = Acquisition.aq_base(ob).UID()
+                if not item.get('_uuid'):
+                    item['_uuid'] = str(uuid.uuid4()).replace('-', '')
             yield item
 
 
