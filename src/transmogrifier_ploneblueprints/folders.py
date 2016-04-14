@@ -3,7 +3,6 @@ import importlib
 import Acquisition
 
 from plone import api
-from plone.dexterity.interfaces import IDexterityFTI
 from venusianconfiguration import configure
 from transmogrifier.blueprints import ConditionalBlueprint
 from transmogrifier.utils import defaultMatcher
@@ -21,6 +20,16 @@ else:
     from Products.Archetypes.ArchetypeTool import _types
     HAS_ARCHETYPES = True
 
+try:
+    pkg_resources.get_distribution('plone.dexterity')
+except pkg_resources.DistributionNotFound:
+    HAS_DEXTERITY = False
+    class IDexterityFTI(object):
+        """Mock"""
+else:
+    # noinspection PyProtectedMember
+    from plone.dexterity.interfaces import IDexterityFTI
+    HAS_DEXTERITY = True
 
 # collective/transmogrifier/sections/folders.py
 # by rpatterson, optilude

@@ -4,9 +4,6 @@ from email.message import Message
 import Acquisition
 import pkg_resources
 from plone import api
-from plone.dexterity.interfaces import IDexterityFTI
-from plone.dexterity.interfaces import IDexterityContent
-from plone.dexterity.utils import iterSchemata
 from plone.rfc822 import initializeObject
 from plone.rfc822 import initializeObjectFromSchemata
 from plone.rfc822 import constructMessage
@@ -33,6 +30,21 @@ else:
     from collective.atrfc822.fields import iterFields
     HAS_ARCHETYPES = True
 
+
+try:
+    pkg_resources.get_distribution('plone.dexterity')
+except pkg_resources.DistributionNotFound:
+    HAS_DEXTERITY = False
+    class IDexterityFTI(object):
+        """Mock"""
+
+    class IDexterityContent(object):
+        """Mock"""
+else:
+    from plone.dexterity.interfaces import IDexterityFTI
+    from plone.dexterity.interfaces import IDexterityContent
+    from plone.dexterity.utils import iterSchemata
+    HAS_DEXTERITY = True
 
 def marshall(ob):
     types_tool = api.portal.get_tool('portal_types')

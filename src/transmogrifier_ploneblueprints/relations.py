@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 from plone import api
-from plone.dexterity.interfaces import IDexterityContent
 from plone.rfc822.defaultfields import BaseFieldMarshaler
 from plone.rfc822.interfaces import IFieldMarshaler
 from plone.uuid.interfaces import IUUID
@@ -8,6 +7,17 @@ from venusianconfiguration import configure
 import pkg_resources
 from zope.component import getUtility
 from zope.interface import implementer
+
+
+try:
+    pkg_resources.get_distribution('plone.dexterity')
+except pkg_resources.DistributionNotFound:
+    HAS_DEXTERITY = False
+    class IDexterityContent(object):
+        """Mock"""
+else:
+    from plone.dexterity.interfaces import IDexterityContent
+    HAS_DEXTERITY = True
 
 try:
     pkg_resources.get_distribution('z3c.relationfield')

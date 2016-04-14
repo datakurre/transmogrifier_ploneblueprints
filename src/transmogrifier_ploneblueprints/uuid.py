@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 from plone import api
-from plone.dexterity.interfaces import IDexterityFTI
 from venusianconfiguration import configure
 from transmogrifier.blueprints import ConditionalBlueprint
 from transmogrifier_ploneblueprints.utils import traverse
@@ -16,6 +15,16 @@ except pkg_resources.DistributionNotFound:
 else:
     from Products.Archetypes import interfaces as AT
     HAS_ARCHETYPES = True
+
+try:
+    pkg_resources.get_distribution('plone.dexterity')
+except pkg_resources.DistributionNotFound:
+    HAS_DEXTERITY = False
+    class IDexterityFTI(object):
+        """Mock"""
+else:
+    from plone.dexterity.interfaces import IDexterityFTI
+    HAS_DEXTERITY = True
 
 try:
     pkg_resources.get_distribution('plone.app.referenceablebehavior')
