@@ -151,10 +151,8 @@ class SetObjectPositionInParent(ConditionalBlueprint):
         portal = api.portal.get()
         key = self.options.get('key', '_gopip')
         for item in self.previous:
-            if self.condition(item):
-                position = item.get(key)
-                if position is None:
-                    continue
+            position = item.get(key)
+            if self.condition(item) and position is not None:
                 try:
                     ob = traverse(portal, item['_path'])
                 except KeyError:
