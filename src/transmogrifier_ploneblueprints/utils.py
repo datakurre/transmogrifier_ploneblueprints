@@ -28,7 +28,10 @@ def traverse(context, path, default=None):
     for element in pathsplit(path.strip(posixpath.sep)):
         if not hasattr(context, '_getOb'):
             return default
-        context = context._getOb(element, default=default)
+        if getattr(context, 'id', '') == element:
+            context = context._getOb(element, default=context)  # allow traversing self
+        else:
+            context = context._getOb(element, default=default)
         if context is default:
             break
     return context
