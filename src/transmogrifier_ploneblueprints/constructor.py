@@ -73,7 +73,8 @@ def constructInstance(item, type_key_matcher, path_key_matcher,
         return
 
     # noinspection PyUnresolvedeferences
-    if getattr(Acquisition.aq_base(context), id_, None) is not None:  # exists
+    exists = getattr(Acquisition.aq_base(context), id_, None)
+    if getattr(exists, 'id', None) == id_:
         return
 
     obj = _constructInstance(fti, context, id_)
