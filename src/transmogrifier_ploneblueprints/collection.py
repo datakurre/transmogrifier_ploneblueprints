@@ -19,6 +19,10 @@ class Subcollection(ConditionalBlueprint):
                     yield item
                     continue
 
+                if not context:
+                    yield item
+                    continue
+
                 if all([context.portal_type == 'Collection', 
                         item['_type'] == 'Collection']):
                     path_parts = item['_path'].split('/')
