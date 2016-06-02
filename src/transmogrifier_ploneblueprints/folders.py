@@ -31,6 +31,7 @@ else:
     from plone.dexterity.interfaces import IDexterityFTI
     HAS_DEXTERITY = True
 
+
 # collective/transmogrifier/sections/folders.py
 # by rpatterson, optilude
 
@@ -177,13 +178,16 @@ class PortalType(ConditionalBlueprint):
             if self.condition(item):
                 try:
                     ob = traverse(portal, item['_path'])
-                    portal_type = item[key]
                 except KeyError:
                     pass
-                else:
-                    # Skip folder_type, because Folders-blueprint
-                    # would cause all folderish-types to be b0rked
-                    if ob is not portal and portal_type != folder_type:
-                        ob.portal_type = portal_type
-                        ensure_correct_class(ob)
+
+                assert ob is not None, (
+                    'Unable to traverse to "{0:s}".' .format(item['_path']))
+
+                portal_type = item[key]
+                # Skip folder_type, because Folders-blueprint
+                # would cause all folderish-types to be b0rked
+                if ob is not portal and portal_type != folder_type:
+                    ob.portal_type = portal_type
+                    ensure_correct_class(ob)
             yield item
