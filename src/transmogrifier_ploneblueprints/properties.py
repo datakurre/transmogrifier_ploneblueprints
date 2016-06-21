@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import Acquisition
 from plone import api
 from transmogrifier.blueprints import ConditionalBlueprint
 from transmogrifier_ploneblueprints.utils import traverse
@@ -16,6 +17,14 @@ class GetProperties(ConditionalBlueprint):
                     for key in ob.propertyIds()
                 ]
                 item['_properties'] = properties
+
+                if 'default_page' not in ob.propertyIds():
+                    try:
+                        default_page = Acquisition.aq_base(ob).default_page
+                        ob['_properties'].append(
+                            ('default_page', default_page, 'string'))
+                    except AttributeError:
+                        pass
             yield item
 
 

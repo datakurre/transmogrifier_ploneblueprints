@@ -3,6 +3,7 @@ from email.message import Message
 
 import Acquisition
 import pkg_resources
+from DateTime import DateTime
 from plone import api
 from plone.rfc822 import initializeObject
 from plone.rfc822 import initializeObjectFromSchemata
@@ -18,6 +19,7 @@ from venusianconfiguration import configure
 from zope.schema.interfaces import IChoice
 
 from transmogrifier_ploneblueprints.utils import traverse
+from transmogrifier.blueprints import Blueprint
 from transmogrifier.blueprints import ConditionalBlueprint
 
 import logging
@@ -55,6 +57,8 @@ except pkg_resources.DistributionNotFound:
     HAS_PAC = False
 else:
     from plone.app.contenttypes.behaviors.leadimage import ILeadImage
+    from plone.event.utils import pydt
+    from pytz import timezone
     alsoProvides(ILeadImage['image'], IPrimaryField)
     HAS_PAC = True
 
@@ -112,6 +116,20 @@ class RFC822Demarshall(ConditionalBlueprint):
                 ob = traverse(portal, item['_path'])
                 if ob is not portal:
                     demarshall(ob, item)
+            yield item
+
+
+@configure.transmogrifier.blueprint.component(name='plone.rfc822.demarshall.event.dates')  # noqa
+class RFC822DemarshallEventDates(Blueprint):
+    def __iter__(self):
+        portal = api.portal.get()
+        tz = timezone(api.portal.get_registry_record('plone.portal_timezone'))
+        for item in self.previous:
+            if HAS_PAC and item.get('_type') == 'Event':
+                ob = traverse(portal, item['_path'])
+                if ob is not portal:
+                    ob.start = pydt(DateTime(ob.start)).astimezone(tz)
+                    ob.end = pydt(DateTime(ob.end)).astimezone(tz)
             yield item
 
 
