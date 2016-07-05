@@ -38,6 +38,24 @@ else:
     HAS_DEXTERITY_REFERENCEABLE = True
 
 
+@configure.transmogrifier.blueprint.component(name='plone.uuid.get_parent')
+class GetParentUUID(ConditionalBlueprint):
+    def __iter__(self):
+        portal = api.portal.get()
+        for item in self.previous:
+            if self.condition(item):
+                ob = traverse(portal, item['_path'])
+                parent = Acquisition.aq_parent(ob)
+                uuid_ = IUUID(parent, None)
+                if uuid is not None:
+                    item['_parent_uuid'] = uuid_
+                elif hasattr(Acquisition.aq_base(parent), 'UID'):
+                    item['_parent_uuid'] = Acquisition.aq_base(parent).UID()
+                if not item.get('_parent_uuid'):
+                    item['_parent_uuid'] = None
+            yield item
+
+
 @configure.transmogrifier.blueprint.component(name='plone.uuid.get')
 class GetUUID(ConditionalBlueprint):
     def __iter__(self):
