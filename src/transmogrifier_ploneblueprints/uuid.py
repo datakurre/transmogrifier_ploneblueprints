@@ -38,6 +38,38 @@ else:
     HAS_DEXTERITY_REFERENCEABLE = True
 
 
+@configure.transmogrifier.blueprint.component(name='plone.uuid.path_from_uuid')
+class FixPathFromUUID(ConditionalBlueprint):
+    def __iter__(self):
+        portal = api.portal.get()
+        portal_path = '/'.join(portal.getPhysicalPath())
+        pc = api.portal.get_tool('portal_catalog')
+        for item in self.previous:
+            if self.condition(item):
+                uuid_ = item['_uuid']
+                uuid_brains = (
+                    uuid_ and
+                    pc.unrestrictedSearchResults(UID=uuid_) or
+                    [])
+
+                parent_uuid_ = item['_parent_uuid']
+                parent_uuid_brains = (
+                    parent_uuid_ and
+                    pc.unrestrictedSearchResults(UID=parent_uuid_) or
+                    [])
+
+                if uuid_brains:
+                    for brain in uuid_brains:
+                        item['_path'] = brain.getPath()[len(portal_path):]
+
+                elif parent_uuid_brains:
+                    for brain in parent_uuid_brains:
+                        item['_path'] = (brain.getPath()[len(portal_path):] +
+                                         '/' + item['_path'].split('/')[-1])
+
+            yield item
+
+
 @configure.transmogrifier.blueprint.component(name='plone.uuid.get_parent')
 class GetParentUUID(ConditionalBlueprint):
     def __iter__(self):
