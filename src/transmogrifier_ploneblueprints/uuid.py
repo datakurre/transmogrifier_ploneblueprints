@@ -47,7 +47,7 @@ class GetParentUUID(ConditionalBlueprint):
                 ob = traverse(portal, item['_path'])
                 parent = Acquisition.aq_parent(ob)
                 uuid_ = IUUID(parent, None)
-                if uuid is not None:
+                if uuid_ is not None:
                     item['_parent_uuid'] = uuid_
                 elif hasattr(Acquisition.aq_base(parent), 'UID'):
                     item['_parent_uuid'] = Acquisition.aq_base(parent).UID()
@@ -64,7 +64,7 @@ class GetUUID(ConditionalBlueprint):
             if self.condition(item):
                 ob = traverse(portal, item['_path'])
                 uuid_ = IUUID(ob, None)
-                if uuid is not None:
+                if uuid_ is not None:
                     item['_uuid'] = uuid_
                 elif hasattr(Acquisition.aq_base(ob), 'UID'):
                     item['_uuid'] = Acquisition.aq_base(ob).UID()
