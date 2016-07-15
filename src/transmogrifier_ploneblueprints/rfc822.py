@@ -123,7 +123,9 @@ class RFC822Demarshall(ConditionalBlueprint):
 class RFC822DemarshallEventDates(Blueprint):
     def __iter__(self):
         portal = api.portal.get()
-        tz = timezone(api.portal.get_registry_record('plone.portal_timezone'))
+        if HAS_PAC:
+            tz = timezone(
+                api.portal.get_registry_record('plone.portal_timezone'))
         for item in self.previous:
             if HAS_PAC and item.get('_type') == 'Event':
                 ob = traverse(portal, item['_path'])
