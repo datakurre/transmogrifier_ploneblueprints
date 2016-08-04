@@ -15,7 +15,10 @@ class SetWorkflow(ConditionalBlueprint):
         for item in self.previous:
             if self.condition(item):
                 ob = traverse(portal, item['_path'])
-                ob.workflow_history = item['_workflow_history']
+                ob.workflow_history = item['_workflow_history'] or {}
+#               if 'simple_publication_workflow' in ob.workflow_history:
+#                   ob.workflow_history['plone_workflow'] = \
+#                       ob.workflow_history['simple_publication_workflow']
                 for wf in wftool.getWorkflowsFor(ob):
                     wf.updateRoleMappingsFor(ob)
             yield item
