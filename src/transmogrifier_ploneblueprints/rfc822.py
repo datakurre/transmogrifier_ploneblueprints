@@ -1,22 +1,21 @@
 # -*- coding: utf-8 -*-
-from email.message import Message
-
-import Acquisition
-import pkg_resources
 from DateTime import DateTime
+from email.message import Message
 from plone import api
-from plone.rfc822 import initializeObject
-from plone.rfc822 import initializeObjectFromSchemata
+from plone.rfc822.defaultfields import UnicodeValueFieldMarshaler
 from plone.rfc822 import constructMessage
 from plone.rfc822 import constructMessageFromSchemata
-from plone.rfc822.defaultfields import UnicodeValueFieldMarshaler
+from plone.rfc822 import initializeObject
+from plone.rfc822 import initializeObjectFromSchemata
 from plone.rfc822.interfaces import IFieldMarshaler
 from plone.rfc822.interfaces import IPrimaryField
-from zope.component import adapter
-from zope.interface import implementer
-from zope.interface import alsoProvides
 from venusianconfiguration import configure
+from zope.component import adapter
+from zope.interface import alsoProvides
+from zope.interface import implementer
 from zope.schema.interfaces import IChoice
+import Acquisition
+import pkg_resources
 
 from transmogrifier_ploneblueprints.utils import traverse
 from transmogrifier.blueprints import Blueprint
@@ -123,7 +122,13 @@ class RFC822Demarshall(ConditionalBlueprint):
 class RFC822DemarshallEventDates(Blueprint):
     def __iter__(self):
         portal = api.portal.get()
-        tz = timezone(api.portal.get_registry_record('plone.portal_timezone'))
+        default_timezone = self.options.get('default_timezone') or 'UTC'
+        if HAS_PAC:
+            tz = api.portal.get_registry_record('plone.portal_timezone')
+            if tz is not None:
+                tz = timezone(tz)
+            else:
+                tz = timezone(default_timezone)
         for item in self.previous:
             if HAS_PAC and item.get('_type') == 'Event':
                 ob = traverse(portal, item['_path'])
