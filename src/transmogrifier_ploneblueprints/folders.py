@@ -185,6 +185,7 @@ class PortalType(ConditionalBlueprint):
                     'Unable to traverse to "{0:s}".' .format(item['_path']))
 
                 portal_type = item[key]
+
                 # Skip folder_type, because Folders-blueprint
                 # would cause all folderish-types to be b0rked
                 if ob is not portal and portal_type != folder_type:

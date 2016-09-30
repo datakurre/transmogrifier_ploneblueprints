@@ -53,10 +53,34 @@ def extract_mapping(doc, node, manager_name, category, key, mapping):
             node.appendChild(child)
 
 
-def patch_portlets_xml(xml, prefix=None):
-    portal = '/'.join(api.portal.get().getPhysicalPath())
-    if prefix is not None and prefix.startswith(portal):
-        xml = xml.replace('>{0:s}/'.format(prefix[len(portal):]), '>/')
+def patch_get_portlets_xml(xml, prefix=None):
+    portal = api.portal.get()
+    portal_path = '/'.join(portal.getPhysicalPath())
+
+    if prefix is not None and prefix.startswith(portal_path):
+        xml = xml.replace('>{0:s}/'.format(prefix[len(portal_path):]), '>/')
+
+    # This must be a bug in p.a.portlets where it exports assignments, which it
+    # cannot import, empty tag cannot be interpreted into an integer
+    xml = xml.replace('<property name="limit"/>',
+                      '<property name="limit">0</property>')
+
+    return xml
+
+
+def patch_set_portlets_xml(xml, prefix=None):
+    portal = api.portal.get()
+    portal_path = '/'.join(portal.getPhysicalPath())
+    if prefix:
+        try:
+            prefix_target = portal.unrestrictedTraverse(prefix.split('/'))
+            prefix = '/'.join(prefix_target.getPhysicalPath())
+        except (AttributeError, KeyError):
+            prefix = None
+
+    if prefix is not None and prefix.startswith(portal_path):
+        xml = xml.replace(
+            ' key="/', ' key="' + prefix[len(portal_path):] + '/')
 
     # This must be a bug in p.a.portlets where it exports assignments, which it
     # cannot import, empty tag cannot be interpreted into an integer
@@ -86,7 +110,7 @@ def get_portlet_assignment_xml(context, prefix):
                         key, mapping)
 
     doc.appendChild(node)
-    xml = patch_portlets_xml(doc.toprettyxml(' '), prefix)
+    xml = patch_get_portlets_xml(doc.toprettyxml(' '), prefix)
     doc.unlink()
     return xml
 
@@ -132,10 +156,11 @@ class SetPortlets(ConditionalBlueprint):
     def __iter__(self):
         key = self.options.get('key', '_portlets')
         portal_setup = api.portal.get_tool('portal_setup')
+        prefix = self.options.get('prefix') or None
 
         for item in self.previous:
             if self.condition(item):
                 if key in item.keys():
-                    portlets_xml = patch_portlets_xml(item[key])
+                    portlets_xml = patch_set_portlets_xml(item[key], prefix=prefix)
                     import_portlets(portal_setup, portlets_xml)
             yield item

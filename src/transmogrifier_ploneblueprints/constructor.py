@@ -1,3 +1,4 @@
+from __future__ import print_function
 import posixpath
 
 import Acquisition
@@ -22,7 +23,7 @@ def _constructInstance(fti, context, id_):
     except Exception:
         import traceback
         traceback.print_exc()
-        print "Fix issue manually and continue to retry..."
+        print("Fix issue manually and continue to retry...")
         import pdb
         pdb.set_trace()
         obj = fti._constructInstance(context, id_)
@@ -33,7 +34,7 @@ def cleanup(obj):
     for obj_id in obj.objectIds():
         try:
             obj.manage_delObjects([obj_id])
-        except Exception, e:
+        except Exception as e:
             logger.warn('Unable to clean %s because of %s' % (
                 obj[obj_id], e
             ))
@@ -56,6 +57,9 @@ def constructInstance(item, type_key_matcher, path_key_matcher,
     fti = types_tool.getTypeInfo(type_)
     if fti is None:  # not an existing type
         return
+
+    assert fti is not None, (
+        u'Portal type "{0:s}" not available.'.format(type_))
 
     path = path.encode('ASCII')
     container, id_ = posixpath.split(path.strip('/'))
