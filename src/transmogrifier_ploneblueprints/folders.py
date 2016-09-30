@@ -138,7 +138,8 @@ class GetObjectPositionInParent(ConditionalBlueprint):
                     ob = item['_object']
                     id_ = ob.getId()
                     parent = Acquisition.aq_parent(ob)
-                    if hasattr(Acquisition.aq_base(ob), 'getObjectPosition'):
+                    if hasattr(Acquisition.aq_base(parent),
+                               'getObjectPosition'):
                         item[key] = parent.getObjectPosition(id_)
                     else:
                         item[key] = None
