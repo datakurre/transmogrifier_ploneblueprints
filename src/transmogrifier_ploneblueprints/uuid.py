@@ -60,12 +60,15 @@ class FixPathFromUUID(ConditionalBlueprint):
 
                 if uuid_brains:
                     for brain in uuid_brains:
+                        del item['_path']
                         item['_path'] = brain.getPath()[len(portal_path):]
 
                 elif parent_uuid_brains:
                     for brain in parent_uuid_brains:
+                        path_ = item['_path']
+                        del item['_path']
                         item['_path'] = (brain.getPath()[len(portal_path):] +
-                                         '/' + item['_path'].split('/')[-1])
+                                         '/' + path_.split('/')[-1])
 
             yield item
 
