@@ -1,15 +1,14 @@
 # -*- coding: utf-8 -*-
-import importlib
-import Acquisition
-
 from plone import api
-from venusianconfiguration import configure
 from transmogrifier.blueprints import ConditionalBlueprint
 from transmogrifier.utils import defaultMatcher
+from transmogrifier_ploneblueprints.utils import explicit_traverse
 from transmogrifier_ploneblueprints.utils import pathsplit
-from transmogrifier_ploneblueprints.utils import traverse
+from venusianconfiguration import configure
 
+import Acquisition
 import pkg_resources
+
 
 try:
     pkg_resources.get_distribution('Products.Archetypes')
@@ -17,19 +16,12 @@ except pkg_resources.DistributionNotFound:
     HAS_ARCHETYPES = False
 else:
     # noinspection PyProtectedMember
-    from Products.Archetypes.ArchetypeTool import _types
     HAS_ARCHETYPES = True
 
 try:
     pkg_resources.get_distribution('plone.dexterity')
 except pkg_resources.DistributionNotFound:
     HAS_DEXTERITY = False
-    class IDexterityFTI(object):
-        """Mock"""
-else:
-    # noinspection PyProtectedMember
-    from plone.dexterity.interfaces import IDexterityFTI
-    HAS_DEXTERITY = True
 
 
 # collective/transmogrifier/sections/folders.py
@@ -47,8 +39,8 @@ def folders(item, path_key_matcher, new_path_key, new_type_key, folder_type,
 
     path = item[path_key]
     elements = path.strip('/').rsplit('/', 1)
-    container, id_ = (len(elements) == 1
-                      and ('', elements[0]) or elements)
+    container, id_ = (len(elements) == 1 and
+                      ('', elements[0]) or elements)
 
     # This may be a new container
     if container not in seen:
@@ -66,7 +58,7 @@ def folders(item, path_key_matcher, new_path_key, new_type_key, folder_type,
 
                 if current_path and current_path not in seen:
 
-                    if element and traverse(obj, element) is None:
+                    if element and explicit_traverse(obj, element) is None:
                         # We don't have this path - yield to create
                         # a skeleton folder
                         yield {new_path_key: '/' + current_path,
@@ -74,7 +66,7 @@ def folders(item, path_key_matcher, new_path_key, new_type_key, folder_type,
                     if cache:
                         seen.add(current_path)
 
-                obj = traverse(obj, element)
+                obj = explicit_traverse(obj, element)
 
     if cache:
         seen.add('{0:s}/{1:s}'.format(container, id_, ))
@@ -102,32 +94,7 @@ class Folders(ConditionalBlueprint):
             yield item
 
 
-def ensure_correct_class(ob):
-    # TODO: Detect if class is changed into container type and initialize it
-    types_tool = api.portal.get_tool('portal_types')
-    fti = types_tool.get(ob.portal_type)
-    if IDexterityFTI.providedBy(fti):
-        module_name, class_name = fti.klass.rsplit('.', 1)
-        module = importlib.import_module(module_name)
-        klass = getattr(module, class_name)
-    elif HAS_ARCHETYPES:
-        key = '.'.join([fti.product, fti.id])
-        klass = _types.get(key, {}).get('klass', None)
-    if klass is not None and ob.__class__ != klass:
-        ob.__class__ = klass
-        ob._p_changed = True
-
-        # XXX: This may not work or may have strange side-effects:
-        #
-        # http://blog.redturtle.it/2013/02/25/
-        # migrating-dexterity-items-to-dexterity-containers
-        #
-        # This would work if the class change is done before the
-        # wrong class is committed. Also, this has been seen to work
-        # when the target object does not have any children yet.
-
-
-@configure.transmogrifier.blueprint.component(name='plone.gopip.get')
+@configure.transmogrifier.blueprint.component(name='plone.folders.gopip.get')
 class GetObjectPositionInParent(ConditionalBlueprint):
     # noinspection PyUnresolvedReferences
     def __iter__(self):
@@ -135,9 +102,9 @@ class GetObjectPositionInParent(ConditionalBlueprint):
         for item in self.previous:
             if self.condition(item):
                 if '_object' in item and key:
-                    ob = item['_object']
-                    id_ = ob.getId()
-                    parent = Acquisition.aq_parent(ob)
+                    obj = item['_object']
+                    id_ = obj.getId()
+                    parent = Acquisition.aq_parent(obj)
                     if hasattr(Acquisition.aq_base(parent),
                                'getObjectPosition'):
                         item[key] = parent.getObjectPosition(id_)
@@ -146,50 +113,20 @@ class GetObjectPositionInParent(ConditionalBlueprint):
             yield item
 
 
-@configure.transmogrifier.blueprint.component(name='plone.gopip.set')
+@configure.transmogrifier.blueprint.component(name='plone.folders.gopip.set')
 class SetObjectPositionInParent(ConditionalBlueprint):
     # noinspection PyUnresolvedReferences
     def __iter__(self):
-        portal = api.portal.get()
         key = self.options.get('key', '_gopip')
         for item in self.previous:
             position = item.get(key)
             if self.condition(item) and position is not None:
-                try:
-                    ob = traverse(portal, item['_path'])
-                except KeyError:
-                    pass
-                if ob:
-                    id_ = ob.getId()
-                    parent = Acquisition.aq_parent(ob)
+                obj = api.content.get(item['_path'])
+                if obj:
+                    id_ = obj.getId()
+                    parent = Acquisition.aq_parent(obj)
                     if hasattr(Acquisition.aq_base(parent),
                                'moveObjectToPosition'):
                         parent.moveObjectToPosition(
                             id_, position, suppress_events=False)
-            yield item
-
-
-@configure.transmogrifier.blueprint.component(name='plone.portal_type')
-class PortalType(ConditionalBlueprint):
-    def __iter__(self):
-        portal = api.portal.get()
-        key = self.options.get('key', '_type')
-        folder_type = self.options.get('folder-type', 'Folder')
-        for item in self.previous:
-            if self.condition(item):
-                try:
-                    ob = traverse(portal, item['_path'])
-                except KeyError:
-                    pass
-
-                assert ob is not None, (
-                    'Unable to traverse to "{0:s}".' .format(item['_path']))
-
-                portal_type = item[key]
-
-                # Skip folder_type, because Folders-blueprint
-                # would cause all folderish-types to be b0rked
-                if ob is not portal and portal_type != folder_type:
-                    ob.portal_type = portal_type
-                    ensure_correct_class(ob)
             yield item

@@ -1,28 +1,27 @@
 # -*- coding: utf-8 -*-
-import json
-import logging
-
-import Acquisition
+from DateTime import DateTime
+from plone import api
 from plone.rfc822 import constructMessage
 from plone.rfc822.defaultfields import BaseFieldMarshaler
 from plone.rfc822.interfaces import IFieldMarshaler
-from venusianconfiguration import configure
-from DateTime import DateTime
-from plone import api
-from zope import schema
-from zope.interface import Interface
-from zope.interface import implementer
-from zope.schema import getFieldNamesInOrder
-
 from transmogrifier.blueprints import ConditionalBlueprint
 from transmogrifier_ploneblueprints.rfc822 import marshall
+from venusianconfiguration import configure
+from zope import schema
+from zope.interface import implementer
+from zope.interface import Interface
+from zope.schema import getFieldNamesInOrder
+
+import Acquisition
+import json
+import logging
 
 
 # plone/app/contenttypes/migration/topics.py
 # by mauritsvanrees, jensens, pbauer
 
 logger = logging.getLogger('transmogrifier')
-prefix = "plone.app.querystring"
+prefix = 'plone.app.querystring'
 
 INVALID_OPERATION = 'Invalid operation %s for criterion: %s'
 
@@ -45,11 +44,11 @@ class CriterionConverter(object):
 
     def get_operation(self, value, index, criterion):
         # Get dotted operation method.  This may depend on value.
-        return "%s.operation.%s" % (prefix, self.operator_code)
+        return '%s.operation.%s' % (prefix, self.operator_code)
 
     def get_alt_operation(self, value, index, criterion):
         # Get dotted operation method.  This may depend on value.
-        return "%s.operation.%s" % (prefix, self.alt_operator_code)
+        return '%s.operation.%s' % (prefix, self.alt_operator_code)
 
     def is_index_known(self, registry, index):
         # Is the index registered as criterion index?
@@ -57,8 +56,8 @@ class CriterionConverter(object):
         try:
             registry.get(key)
         except KeyError:
-            logger.warn("Index %s is no criterion index. Registry gives "
-                        "KeyError: %s", index, key)
+            logger.warn('Index %s is no criterion index. Registry gives '
+                        'KeyError: %s', index, key)
             return False
         return True
 
@@ -68,7 +67,7 @@ class CriterionConverter(object):
         index_data = registry.get(key)
         if index_data.get('enabled'):
             return True
-        logger.warn("Index %s is not enabled as criterion index. ", index)
+        logger.warn('Index %s is not enabled as criterion index. ', index)
         return False
 
     def switch_type_to_portal_type(self, value, criterion):
@@ -95,7 +94,7 @@ class CriterionConverter(object):
                 if Type in portal_types:
                     portal_type = Type
                 else:
-                    logger.warn("Cannot switch Type %r to portal_type.", Type)
+                    logger.warn('Cannot switch Type %r to portal_type.', Type)
                     continue
             new_values.append(portal_type)
         new_values = tuple(new_values)
@@ -126,7 +125,7 @@ class CriterionConverter(object):
     def __call__(self, form_query, criterion, registry):
         criteria = criterion.getCriteriaItems()
         if not criteria:
-            logger.warn("Ignoring empty criterion %s.", criterion)
+            logger.warn('Ignoring empty criterion %s.', criterion)
             return
         for index, value in criteria:
             # Add unknown indexes to invalid form_query
@@ -197,7 +196,7 @@ class ATDateCriteriaConverter(CriterionConverter):
 
     def __call__(self, form_query, criterion, registry):  # noqa
         if criterion.value is None:
-            logger.warn("Ignoring empty criterion %s.", criterion)
+            logger.warn('Ignoring empty criterion %s.', criterion)
             return
         field = criterion.Field()
         value = criterion.Value()
@@ -232,31 +231,31 @@ class ATDateCriteriaConverter(CriterionConverter):
         operation = criterion.getOperation()
         if operation == 'within_day':
             if date.isCurrentDay():
-                new_operation = "%s.operation.date.today" % prefix
+                new_operation = '%s.operation.date.today' % prefix
                 add_row(new_operation)
                 return
             date_range = (date.earliestTime(), date.latestTime())
-            new_operation = "%s.operation.date.between" % prefix
+            new_operation = '%s.operation.date.between' % prefix
             add_row(new_operation, date_range)
             return
         if operation == 'more':
             if value != 0:
-                new_operation = ("{0}.operation.date."
-                                 "largerThanRelativeDate".format(prefix))
+                new_operation = ('{0}.operation.date.'
+                                 'largerThanRelativeDate'.format(prefix))
                 add_row(new_operation, value)
                 return
             else:
-                new_operation = "{0}.operation.date.afterToday".format(prefix)
+                new_operation = '{0}.operation.date.afterToday'.format(prefix)
                 add_row(new_operation)
                 return
         if operation == 'less':
             if value != 0:
-                new_operation = ("{0}.operation.date."
-                                 "lessThanRelativeDate".format(prefix))
+                new_operation = ('{0}.operation.date.'
+                                 'lessThanRelativeDate'.format(prefix))
                 add_row(new_operation, value)
                 return
             else:
-                new_operation = "{0}.operation.date.beforeToday".format(prefix)
+                new_operation = '{0}.operation.date.beforeToday'.format(prefix)
                 add_row(new_operation)
                 return
 
@@ -277,8 +276,8 @@ class ATSelectionCriterionConverter(CriterionConverter):
     def get_query_value(self, value, index, criterion):
         values = value['query']
         if value.get('operator') == 'and' and len(values) > 1:
-            logger.warn("Cannot handle selection operator 'and'. Using 'or'. "
-                        "%r", value)
+            logger.warn('Cannot handle selection operator 'and'. Using 'or'. '
+                        '%r', value)
         values = value['query']
         # Special handling for portal_type=Topic.
         if index == 'portal_type' and 'Topic' in values:
@@ -336,10 +335,10 @@ class ATBooleanCriterionConverter(CriterionConverter):
         elif False in value:
             code = 'isFalse'
         else:
-            logger.warn("Unknown value for boolean criterion. "
-                        "Falling back to True. %r", value)
+            logger.warn('Unknown value for boolean criterion. '
+                        'Falling back to True. %r', value)
             code = 'isTrue'
-        return "%s.operation.boolean.%s" % (prefix, code)
+        return '%s.operation.boolean.%s' % (prefix, code)
 
     def __call__(self, form_query, criterion, registry):
         criteria = criterion.getCriteriaItems()
@@ -394,8 +393,8 @@ class ATRelativePathCriterionConverter(CriterionConverter):
 
     def get_query_value(self, value, index, criterion):
         if not criterion.Recurse():
-            logger.warn("Cannot handle non-recursive path search. "
-                        "Allowing recursive search. %r", value)
+            logger.warn('Cannot handle non-recursive path search. '
+                        'Allowing recursive search. %r', value)
         return criterion.getRelativePath()
 
 
@@ -413,17 +412,17 @@ class ATSimpleIntCriterionConverter(CriterionConverter):
         elif direction == 'max':
             code = 'lessThan'
         elif direction == 'min:max':
-            logger.warn("min:max direction not supported for integers. %r",
+            logger.warn('min:max direction not supported for integers. %r',
                         value)
             return
         else:
-            logger.warn("Unknown direction for integers. %r", value)
+            logger.warn('Unknown direction for integers. %r', value)
             return
-        return "{0}.operation.int.{1}".format(prefix, code)
+        return '{0}.operation.int.{1}'.format(prefix, code)
 
     def get_query_value(self, value, index, criterion):
         if isinstance(value['query'], tuple):
-            logger.warn("More than one integer is not supported. %r", value)
+            logger.warn('More than one integer is not supported. %r', value)
             return
         return value['query']
 
@@ -795,12 +794,13 @@ def is_index_known(registry, index):
     try:
         registry.get(key)
     except KeyError:
-        logger.warn("Index %s is no criterion index. Registry gives "
-                    "KeyError: %s", index, key)
+        logger.warn('Index %s is no criterion index. Registry gives '
+                    'KeyError: %s', index, key)
         return False
     return True
 
 
+# noinspection PyUnresolvedReferences
 def is_subtopic(ob):
     return bool(
         getattr(Acquisition.aq_base(Acquisition.aq_parent(ob)),
@@ -808,6 +808,7 @@ def is_subtopic(ob):
     )
 
 
+# noinspection PyUnresolvedReferences
 def get_criteria(ob):
     if is_subtopic(ob):
         for criterion in get_criteria(Acquisition.aq_parent(ob)):
@@ -884,7 +885,7 @@ class MockCollection(object):
 class DictionaryFieldMarshaler(BaseFieldMarshaler):
     ascii = True
 
-    def encode(self, value, charset="utf-8", primary=False):
+    def encode(self, value, charset='utf-8', primary=False):
         if value:
             return json.dumps(value)
         else:
@@ -892,7 +893,7 @@ class DictionaryFieldMarshaler(BaseFieldMarshaler):
                 value, charset=charset, primary=primary)
 
     # noinspection PyPep8Naming
-    def decode(self, value, message=None, charset="utf-8",
+    def decode(self, value, message=None, charset='utf-8',
                contentType=None, primary=False):
         if value:
             return json.loads(value)
@@ -934,16 +935,16 @@ class RFC822MarshallTopicsAsCollections(ConditionalBlueprint):
 
                 # For Topics, also marshall required fields for collections
                 if item['_type'] == 'Topic':
-                    ob = item['_object']
-                    message = marshall_topic_as_collection(ob)
+                    obj = item['_object']
+                    message = marshall_topic_as_collection(obj)
                     for name in getFieldNamesInOrder(IMockCollection):
                         item[key][name] = message[name]
 
                     # Because sub-collections are not supported, re-create
                     # the main topic as separate collection...
-                    if has_subtopics(ob):
+                    if has_subtopics(obj):
                         id_ = item['_path'].split('/')[-1]
-                        while id_ in ob.objectIds():
+                        while id_ in obj.objectIds():
                             id_ += '-{0:s}'.format(id_)
                         item['_path'] += '/{0:s}'.format(id_)
 

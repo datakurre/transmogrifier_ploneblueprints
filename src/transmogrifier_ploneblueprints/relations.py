@@ -4,15 +4,17 @@ from plone.rfc822.defaultfields import BaseFieldMarshaler
 from plone.rfc822.interfaces import IFieldMarshaler
 from plone.uuid.interfaces import IUUID
 from venusianconfiguration import configure
-import pkg_resources
 from zope.component import getUtility
 from zope.interface import implementer
+
+import pkg_resources
 
 
 try:
     pkg_resources.get_distribution('plone.dexterity')
 except pkg_resources.DistributionNotFound:
     HAS_DEXTERITY = False
+
     class IDexterityContent(object):
         """Mock"""
 else:

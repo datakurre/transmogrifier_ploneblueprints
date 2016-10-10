@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from plone import api
 from transmogrifier.blueprints import ConditionalBlueprint
-from transmogrifier_ploneblueprints.utils import traverse
+from transmogrifier_ploneblueprints.utils import explicit_traverse
 from venusianconfiguration import configure
 
 
@@ -12,7 +12,7 @@ class ReindexObject(ConditionalBlueprint):
         indexes = api.portal.get_tool('portal_catalog').indexes()
         for item in self.previous:
             if self.condition(item):
-                ob = traverse(portal, item['_path'])
+                ob = explicit_traverse(portal, item['_path'])
                 ob.reindexObject(idxs=indexes)
                 ob.reindexObjectSecurity()
             yield item

@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
-import logging
-
+from transmogrifier.blueprints import ConditionalBlueprint
+from transmogrifier.utils import pformat_msg
 from venusianconfiguration import configure
 
-from transmogrifier.utils import pformat_msg
-from transmogrifier.blueprints import ConditionalBlueprint
+import logging
 
 
-@configure.transmogrifier.blueprint.component(name='plone.export.analyze')
+@configure.transmogrifier.blueprint.component(name='plone.analyze')
 class Analyze(ConditionalBlueprint):
     def __iter__(self):
         logger = logging.getLogger(self.options.get('name', 'transmogrifier'))

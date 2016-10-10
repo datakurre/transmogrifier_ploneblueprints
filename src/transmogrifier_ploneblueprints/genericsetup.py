@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 from io import BytesIO
-import tarfile
 from lxml import etree
-
 from plone import api
+from transmogrifier.blueprints import ConditionalBlueprint
 from venusianconfiguration import configure
 
-from transmogrifier.blueprints import ConditionalBlueprint
+import tarfile
 
 
 @configure.transmogrifier.blueprint.component(name='plone.genericsetup.export')
@@ -78,7 +77,7 @@ class GenericSetupSource(ConditionalBlueprint):
 
 
 # noinspection PyUnresolvedReferences
-def behead(tarball):
+def strip_prefix(tarball):
     fb = BytesIO(tarball)
     tar = tarfile.open(fileobj=fb, mode='r:gz')
 
@@ -97,17 +96,6 @@ def behead(tarball):
     return fb2.getvalue()
 
 
-@configure.transmogrifier.blueprint.component(name='plone.genericsetup.behead')
-class GenericSetupBehead(ConditionalBlueprint):
-
-    def __iter__(self):
-        prefix = self.options.get('prefix')
-        for item in self.previous:
-            if self.condition(item) and '_tarball' in item and prefix:
-                item['_tarball'] = behead(item['_tarball'])
-            yield item
-
-
 def import_tarball(portal_setup, item):
     tarball = item.get('tarball')
     portal_setup.runAllImportStepsFromProfile(None, True, archive=tarball)
@@ -117,8 +105,11 @@ def import_tarball(portal_setup, item):
 class GenericSetupConstructor(ConditionalBlueprint):
 
     def __iter__(self):
+        prefix = self.options('prefix')
         portal_setup = api.portal.get_tool('portal_setup')
         for item in self.previous:
             if self.condition(item) and '_tarball' in item:
                 import_tarball(portal_setup, item)
+                if prefix:
+                    item['_tarball'] = strip_prefix(item['_tarball'])
             yield item

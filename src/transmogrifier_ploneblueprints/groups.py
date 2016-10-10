@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from plone import api
-from transmogrifier.blueprints import Blueprint, ConditionalBlueprint
+from transmogrifier.blueprints import Blueprint
+from transmogrifier.blueprints import ConditionalBlueprint
 from venusianconfiguration import configure
 
 

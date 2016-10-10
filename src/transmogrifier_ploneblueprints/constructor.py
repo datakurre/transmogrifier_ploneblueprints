@@ -1,19 +1,19 @@
+# -*- coding: utf-8 -*-
 from __future__ import print_function
-import posixpath
-
-import Acquisition
 from plone import api
-from venusianconfiguration import configure
-
 from transmogrifier.blueprints import ConditionalBlueprint
 from transmogrifier.utils import defaultMatcher
-from transmogrifier_ploneblueprints.utils import traverse
+from transmogrifier_ploneblueprints.utils import explicit_traverse
+from venusianconfiguration import configure
+
+import Acquisition
+import logging
+import posixpath
 
 
 # from collective/transmogrifier/sections/constructor.py
 # by rpatterson, regebro, mjpieters, optilude, csenger
 
-import logging
 logger = logging.getLogger('transmogrifier')
 
 
@@ -23,7 +23,7 @@ def _constructInstance(fti, context, id_):
     except Exception:
         import traceback
         traceback.print_exc()
-        print("Fix issue manually and continue to retry...")
+        print('Fix issue manually and continue to retry...')
         import pdb
         pdb.set_trace()
         obj = fti._constructInstance(context, id_)
@@ -67,7 +67,7 @@ def constructInstance(item, type_key_matcher, path_key_matcher,
     if not id_:  # site root should exist
         return
 
-    context = traverse(portal, container, None)
+    context = explicit_traverse(portal, container, None)
     if context is None:
         error = 'Container %s does not exist for item %s' % (
             container, path)

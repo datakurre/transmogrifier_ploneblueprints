@@ -4,12 +4,14 @@ This module scans all direct submodules for component registrations in this
 package when included for zope.configuration with venusianconfiguration.
 
 """
-import os
-from io import StringIO
-
-import pkg_resources
+from configparser import ParsingError
 from configparser import RawConfigParser
+from io import StringIO
 from venusianconfiguration import configure
+
+import logging
+import os
+import pkg_resources
 
 
 # Register pipelines
@@ -20,7 +22,11 @@ for resource in pkg_resources.resource_listdir(__package__, ''):
         # Parse to read title and description
         data = pkg_resources.resource_string(__package__, resource)
         config = RawConfigParser()
-        config.readfp(StringIO(data.decode('utf-8')))
+        try:
+            config.readfp(StringIO(data.decode('utf-8')))
+        except ParsingError:
+            logging.exception('${0:s} has errors:'.format(name))
+            continue
 
         # Register
         configure.transmogrifier.pipeline(

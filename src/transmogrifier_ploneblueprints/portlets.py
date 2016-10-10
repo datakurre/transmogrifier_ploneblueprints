@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from Products.GenericSetup.utils import PrettyDocument
 from io import BytesIO
 from plone import api
 from plone.app.portlets.exportimport.interfaces import IPortletAssignmentExportImportHandler  # noqa
@@ -8,14 +7,17 @@ from plone.portlets.constants import CONTEXT_CATEGORY
 from plone.portlets.interfaces import IPortletAssignmentMapping
 from plone.portlets.interfaces import IPortletAssignmentSettings
 from plone.portlets.interfaces import IPortletManager
+from Products.GenericSetup.utils import PrettyDocument
 from transmogrifier.blueprints import ConditionalBlueprint
 from venusianconfiguration import configure
 from zope.component import getUtilitiesFor
 from zope.component import queryMultiAdapter
 from zope.interface import providedBy
-import tarfile
 
 import logging
+import tarfile
+
+
 logger = logging.getLogger('transmogrifier')
 
 
@@ -123,8 +125,8 @@ class GetPortlets(ConditionalBlueprint):
         for item in self.previous:
             if self.condition(item):
                 if '_object' in item.keys():
-                    ob = item['_object']
-                    item[key] = get_portlet_assignment_xml(ob, prefix) or None
+                    obj = item['_object']
+                    item[key] = get_portlet_assignment_xml(obj, prefix) or None
             yield item
 
 
@@ -161,6 +163,7 @@ class SetPortlets(ConditionalBlueprint):
         for item in self.previous:
             if self.condition(item):
                 if key in item.keys():
-                    portlets_xml = patch_set_portlets_xml(item[key], prefix=prefix)
+                    portlets_xml = patch_set_portlets_xml(
+                        item[key], prefix=prefix)
                     import_portlets(portal_setup, portlets_xml)
             yield item

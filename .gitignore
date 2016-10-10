@@ -1,3 +1,10 @@
-src/transmogrifier_ploneblueprints.egg-info/
+/bin
+/parts
+/extras
+/develop-eggs
+/buildout.cfg
+/.installed.cfg
+/.mr.developer.cfg
+*.egg-info
 *.pyc
 *.swp

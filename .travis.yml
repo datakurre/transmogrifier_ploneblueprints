@@ -9,8 +9,8 @@ install:
 - python bootstrap.py
 - bin/buildout -N -t 3 versions:zc.recipe.egg=
 script:
-- bin/test
 - bin/code-analysis
+#- bin/test
 cache:
   directories:
   - eggs

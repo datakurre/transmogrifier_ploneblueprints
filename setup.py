@@ -22,12 +22,13 @@ setup(
     include_package_data=True,
     zip_safe=False,
     install_requires=[
-        'setuptools',
-        'venusianconfiguration',
-        'transmogrifier [path]',
-        'Plone',
         'collective.atrfc822',
+        'Plone',
         'plone.api',
+        'setuptools',
+        'transmogrifier [path]',
+        'transmogrifier_rabbitpy',
+        'venusianconfiguration',
     ],
     extras_require={'test': [
         'plone.testing',

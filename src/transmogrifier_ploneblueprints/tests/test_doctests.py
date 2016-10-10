@@ -1,16 +1,14 @@
 # -*- coding: utf-8 -*-
+from plone import api
+from plone.testing import layered
+from transmogrifier.interfaces import ITransmogrifier
+from transmogrifier_ploneblueprints.testing import PLONEBLUEPRINTS_FUNCTIONAL_TESTING  # noqa
+from zope.testing.loggingsupport import InstalledHandler
+
 import doctest
 import logging
 import os
 import unittest
-
-from plone import api
-from transmogrifier.interfaces import ITransmogrifier
-from transmogrifier_ploneblueprints.testing import \
-    PLONEBLUEPRINTS_FUNCTIONAL_TESTING
-from zope.testing.loggingsupport import InstalledHandler
-
-from plone.testing import layered
 
 
 def test_suite():

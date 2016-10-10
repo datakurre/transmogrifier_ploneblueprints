@@ -1,27 +1,24 @@
 # -*- coding: utf-8 -*-
-from DateTime import DateTime
 from email.message import Message
 from plone import api
-from plone.rfc822.defaultfields import UnicodeValueFieldMarshaler
 from plone.rfc822 import constructMessage
 from plone.rfc822 import constructMessageFromSchemata
 from plone.rfc822 import initializeObject
 from plone.rfc822 import initializeObjectFromSchemata
+from plone.rfc822.defaultfields import UnicodeValueFieldMarshaler
 from plone.rfc822.interfaces import IFieldMarshaler
 from plone.rfc822.interfaces import IPrimaryField
+from transmogrifier.blueprints import ConditionalBlueprint
 from venusianconfiguration import configure
 from zope.component import adapter
 from zope.interface import alsoProvides
 from zope.interface import implementer
 from zope.schema.interfaces import IChoice
+
 import Acquisition
+import logging
 import pkg_resources
 
-from transmogrifier_ploneblueprints.utils import traverse
-from transmogrifier.blueprints import Blueprint
-from transmogrifier.blueprints import ConditionalBlueprint
-
-import logging
 logger = logging.getLogger('transmogrifier')
 
 
@@ -38,6 +35,7 @@ try:
     pkg_resources.get_distribution('plone.dexterity')
 except pkg_resources.DistributionNotFound:
     HAS_DEXTERITY = False
+
     class IDexterityFTI(object):
         """Mock"""
 
@@ -56,26 +54,24 @@ except pkg_resources.DistributionNotFound:
     HAS_PAC = False
 else:
     from plone.app.contenttypes.behaviors.leadimage import ILeadImage
-    from plone.event.utils import pydt
-    from pytz import timezone
     alsoProvides(ILeadImage['image'], IPrimaryField)
     HAS_PAC = True
 
 
-def marshall(ob):
+def marshall(obj):
     types_tool = api.portal.get_tool('portal_types')
-    fti = types_tool.get(ob.portal_type)
+    fti = types_tool.get(obj.portal_type)
     # noinspection PyUnresolvedReferences
     if HAS_DEXTERITY and IDexterityFTI.providedBy(fti):
         # DX
-        message = constructMessageFromSchemata(ob, iterSchemata(ob))
-    elif HAS_ARCHETYPES and hasattr(Acquisition.aq_base(ob), 'schema'):
+        message = constructMessageFromSchemata(obj, iterSchemata(obj))
+    elif HAS_ARCHETYPES and hasattr(Acquisition.aq_base(obj), 'schema'):
         # AT
-        message = constructMessage(ob, iterFields(ob))
+        message = constructMessage(obj, iterFields(obj))
     else:
         # Other
-        schemata = tuple(ob.__provides__.interfaces())
-        message = constructMessageFromSchemata(ob, schemata)
+        schemata = tuple(obj.__provides__.interfaces())
+        message = constructMessageFromSchemata(obj, schemata)
     return message
 
 
@@ -90,55 +86,31 @@ class RFC822Marshall(ConditionalBlueprint):
             yield item
 
 
-def demarshall(ob, message):
+def demarshall(obj, message):
     types_tool = api.portal.get_tool('portal_types')
-    fti = types_tool.get(ob.portal_type)
+    fti = types_tool.get(obj.portal_type)
     if IDexterityFTI.providedBy(fti):
         # DX
         try:
-            initializeObjectFromSchemata(ob, iterSchemata(ob), message)
+            initializeObjectFromSchemata(obj, iterSchemata(obj), message)
         except Exception:
             raise
-#           import pdb; pdb.set_trace()
-#           initializeObjectFromSchemata(ob, iterSchemata(ob), message)
     elif HAS_ARCHETYPES:
         # AT
-        initializeObject(ob, iterFields(ob), message)
+        initializeObject(obj, iterFields(obj), message)
 
 
 @configure.transmogrifier.blueprint.component(name='plone.rfc822.demarshall')
 class RFC822Demarshall(ConditionalBlueprint):
     def __iter__(self):
-        portal = api.portal.get()
+        key = self.options.get('key')
         for item in self.previous:
             if self.condition(item) and isinstance(item, Message):
-                ob = traverse(portal, item['_path'])
-                if ob is not portal:
-                    demarshall(ob, item)
+                obj = api.content.get(path=item['_path'])
+                demarshall(obj, item[key])
             yield item
 
 
-@configure.transmogrifier.blueprint.component(name='plone.rfc822.demarshall.event.dates')  # noqa
-class RFC822DemarshallEventDates(Blueprint):
-    def __iter__(self):
-        portal = api.portal.get()
-        default_timezone = self.options.get('default_timezone') or 'UTC'
-        if HAS_PAC:
-            tz = api.portal.get_registry_record('plone.portal_timezone')
-            if tz is not None:
-                tz = timezone(tz)
-            else:
-                tz = timezone(default_timezone)
-        for item in self.previous:
-            if HAS_PAC and item.get('_type') == 'Event':
-                ob = traverse(portal, item['_path'])
-                if ob is not portal:
-                    ob.start = pydt(DateTime(ob.start)).astimezone(tz)
-                    ob.end = pydt(DateTime(ob.end)).astimezone(tz)
-            yield item
-
-
-@configure.adapter.factory()
 @implementer(IFieldMarshaler)
 @adapter(IDexterityContent, IChoice)
 class ChoiceValueFieldMarshaler(UnicodeValueFieldMarshaler):

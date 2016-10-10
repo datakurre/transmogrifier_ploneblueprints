@@ -48,8 +48,7 @@ class SetUsers(ConditionalBlueprint):
                 if user_id not in pas.source_users.getUserIds():
                     pas.source_users.addUser(user_id, login, '')
 
-                pas.portal_role_manager.assignRolesToPrincipal(roles,
-                                                               user_id)
+                pas.portal_role_manager.assignRolesToPrincipal(roles, user_id)
 
                 # properties None for default users
                 if properties is not None:

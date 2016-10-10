@@ -4,7 +4,7 @@ from persistent.list import PersistentList
 from plone import api
 from Products.CMFCore.utils import getToolByName
 from transmogrifier.blueprints import ConditionalBlueprint
-from transmogrifier_ploneblueprints.utils import traverse
+from transmogrifier_ploneblueprints.utils import explicit_traverse
 from venusianconfiguration import configure
 
 
@@ -16,7 +16,7 @@ class SetWorkflow(ConditionalBlueprint):
         wftool = getToolByName(portal, 'portal_workflow')
         for item in self.previous:
             if self.condition(item):
-                ob = traverse(portal, item['_path'])
+                ob = explicit_traverse(portal, item['_path'])
                 ob.workflow_history = item['_workflow_history'] or {}
                 for wf in wftool.getWorkflowsFor(ob):
                     wf.updateRoleMappingsFor(ob)
@@ -107,7 +107,7 @@ class MigratePloneToIntranetWorkflow(ConditionalBlueprint):
         wftool = getToolByName(portal, 'portal_workflow')
         for item in self.previous:
             if self.condition(item):
-                ob = traverse(portal, item['_path'])
+                ob = explicit_traverse(portal, item['_path'])
                 history = ob.workflow_history
                 if 'folder_workflow' in history:
                     history['intranet_folder_workflow'] = \

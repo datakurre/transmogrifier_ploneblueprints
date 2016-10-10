@@ -1,38 +1,36 @@
 # -*- coding: utf-8 -*-
-from plone.api.exc import InvalidParameterError
-
-from venusianconfiguration import configure
-from plone import api
 from Acquisition import aq_base
-
+from plone import api
+from plone.api.exc import InvalidParameterError
 from transmogrifier.blueprints import ConditionalBlueprint
-from transmogrifier_ploneblueprints.utils import traverse
+from venusianconfiguration import configure
 
 
 @configure.transmogrifier.blueprint.component(name='plone.placeful_workflow.get')  # noqa
 class GetPlacefulWorkflow(ConditionalBlueprint):
     def __iter__(self):
         try:
-            pwtool = api.portal.get_tool("portal_placeful_workflow")
+            tool = api.portal.get_tool('portal_placeful_workflow')
         except InvalidParameterError:
-            pwtool = None
+            tool = None
         for item in self.previous:
-            if pwtool and self.condition(item):
-                ob = item['_object']
-                config = pwtool.getWorkflowPolicyConfig(ob)
-                if config is not None and (config.getPolicyInId()
-                                           or config.getPolicyBelowId()):
+            if tool and self.condition(item):
+                obj = item['_object']
+                config = tool.getWorkflowPolicyConfig(obj)
+                if config is not None and (config.getPolicyInId() or
+                                           config.getPolicyBelowId()):
                     item['_workflow_policy_in'] = config.getPolicyInId()
                     item['_workflow_policy_below'] = config.getPolicyBelowId()
             yield item
 
 
+# noinspection PyProtectedMember
 def updateRoleMappings(container):
-    wftool = api.portal.get_tool("portal_workflow")
+    wftool = api.portal.get_tool('portal_workflow')
     wfs = {}
     for id_ in wftool.objectIds():
         wf = wftool.getWorkflowById(id_)
-        if hasattr(aq_base(wf), "updateRoleMappingsFor"):
+        if hasattr(aq_base(wf), 'updateRoleMappingsFor'):
             wfs[id_] = wf
     count = wftool._recursiveUpdateRoleMappings(aq_base(container), wfs)
     return count
@@ -41,27 +39,26 @@ def updateRoleMappings(container):
 @configure.transmogrifier.blueprint.component(name='plone.placeful_workflow.set')  # noqa
 class SetPlacefulWorkflow(ConditionalBlueprint):
     def __iter__(self):
-        portal = api.portal.get()
+        key = '_workflow_policy_in'
         try:
-            pwtool = api.portal.get_tool("portal_placeful_workflow")
+            tool = api.portal.get_tool('portal_placeful_workflow')
         except InvalidParameterError:
-            pwtool = None
+            tool = None
 
         for item in self.previous:
-            if (pwtool and self.condition(item)
-                    and '_workflow_policy_in' in item):
-                ob = traverse(portal, item['_path'])
+            if tool and self.condition(item) and key in item:
+                obj = api.content.get(path=item['_path'])
 
                 # Init placeful workflow policy config when required
-                if pwtool.getWorkflowPolicyConfig(ob) is None:
-                    local_tool = ob.manage_addProduct["CMFPlacefulWorkflow"]
+                if tool.getWorkflowPolicyConfig(obj) is None:
+                    local_tool = obj.manage_addProduct['CMFPlacefulWorkflow']
                     local_tool.manage_addWorkflowPolicyConfig()
 
                 # Set the policy
-                config = pwtool.getWorkflowPolicyConfig(ob)
+                config = tool.getWorkflowPolicyConfig(obj)
                 config.setPolicyIn(item.get('_workflow_policy_in', ''))
                 config.setPolicyBelow(item.get('_workflow_policy_below', ''))
 
                 # Update security
-                updateRoleMappings(ob)
+                updateRoleMappings(obj)
             yield item

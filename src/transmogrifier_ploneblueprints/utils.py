@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
+import Acquisition
 import base64
-import posixpath
 import email
+import posixpath
 
 
 # collective/transmogrifier/utils.py
@@ -22,13 +23,16 @@ def pathsplit(path, ospath=posixpath):
 # collective/transmogrifier/utils.py
 # by rpatterson
 
-def traverse(context, path, default=None):
+# noinspection PyProtectedMember,PyUnresolvedReferences
+def explicit_traverse(context, path, default=None):
     """Resolve an object without acquisition or views
     """
     for element in pathsplit(path.strip(posixpath.sep)):
-        if not hasattr(context, '_getOb'):
+        try:
+            base = Acquisition.aq_base(context)
+            context = base._getOb(element, default=default)
+        except AttributeError:
             return default
-        context = context._getOb(element, default=default)
         if context is default:
             break
     return context

@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
-import logging
-
+from transmogrifier.blueprints import ConditionalBlueprint
+from transmogrifier.utils import pformat_msg
 from venusianconfiguration import configure
 
-from transmogrifier.utils import pformat_msg
-from transmogrifier.blueprints import ConditionalBlueprint
+import logging
 
 
-@configure.transmogrifier.blueprint.component(name='plone.import.dump')
+@configure.transmogrifier.blueprint.component(name='plone.dump')
 class Dump(ConditionalBlueprint):
     def __iter__(self):
         logger = logging.getLogger(self.options.get('name', 'transmogrifier'))
@@ -15,7 +14,7 @@ class Dump(ConditionalBlueprint):
         contents = {}
         for item in self.previous:
             if self.condition(item):
-                contents[item['_path']] = item.__dict__
+                contents[item['_path']] = item
             yield item
 
         # Set log level
@@ -26,5 +25,4 @@ class Dump(ConditionalBlueprint):
             # Assume it's an integer:
             level = int(level)
 
-        logger.log(level, pformat_msg(contents))
-
+        logger.log(level, '\n' + pformat_msg(contents))

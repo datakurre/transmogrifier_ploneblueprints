@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 from plone import api
-from venusianconfiguration import configure
-from transmogrifier.blueprints import ConditionalBlueprint
-from transmogrifier_ploneblueprints.utils import traverse
-from plone.uuid.interfaces import IUUID
 from plone.uuid.interfaces import IMutableUUID
+from plone.uuid.interfaces import IUUID
+from transmogrifier.blueprints import ConditionalBlueprint
+from venusianconfiguration import configure
 
 import Acquisition
-import uuid
 import pkg_resources
+import uuid
+
 
 try:
     pkg_resources.get_distribution('Products.Archetypes')
@@ -23,6 +23,7 @@ try:
     pkg_resources.get_distribution('plone.dexterity')
 except pkg_resources.DistributionNotFound:
     HAS_DEXTERITY = False
+
     class IDexterityFTI(object):
         """Mock"""
 else:
@@ -39,7 +40,7 @@ else:
 
 
 @configure.transmogrifier.blueprint.component(name='plone.uuid.path_from_uuid')
-class FixPathFromUUID(ConditionalBlueprint):
+class GetPathFromUUID(ConditionalBlueprint):
     def __iter__(self):
         portal = api.portal.get()
         portal_path = '/'.join(portal.getPhysicalPath())
@@ -73,14 +74,14 @@ class FixPathFromUUID(ConditionalBlueprint):
             yield item
 
 
+# noinspection PyUnresolvedReferences
 @configure.transmogrifier.blueprint.component(name='plone.uuid.get_parent')
 class GetParentUUID(ConditionalBlueprint):
     def __iter__(self):
-        portal = api.portal.get()
         for item in self.previous:
             if self.condition(item):
-                ob = traverse(portal, item['_path'])
-                parent = Acquisition.aq_parent(ob)
+                obj = item['_object']
+                parent = Acquisition.aq_parent(obj)
                 uuid_ = IUUID(parent, None)
                 if uuid_ is not None:
                     item['_parent_uuid'] = uuid_
@@ -91,53 +92,52 @@ class GetParentUUID(ConditionalBlueprint):
             yield item
 
 
+# noinspection PyUnresolvedReferences
 @configure.transmogrifier.blueprint.component(name='plone.uuid.get')
 class GetUUID(ConditionalBlueprint):
     def __iter__(self):
-        portal = api.portal.get()
         for item in self.previous:
             if self.condition(item):
-                ob = traverse(portal, item['_path'])
-                uuid_ = IUUID(ob, None)
+                obj = item['_object']
+                uuid_ = IUUID(obj, None)
                 if uuid_ is not None:
                     item['_uuid'] = uuid_
-                elif hasattr(Acquisition.aq_base(ob), 'UID'):
-                    item['_uuid'] = Acquisition.aq_base(ob).UID()
+                elif hasattr(Acquisition.aq_base(obj), 'UID'):
+                    item['_uuid'] = Acquisition.aq_base(obj).UID()
                 if not item.get('_uuid'):
                     item['_uuid'] = str(uuid.uuid4()).replace('-', '')
             yield item
 
 
 # noinspection PyProtectedMember
-def set_uuid(ob, uuid):
+def set_uuid(obj, uuid):
     types_tool = api.portal.get_tool('portal_types')
-    fti = types_tool.get(ob.portal_type)
+    fti = types_tool.get(obj.portal_type)
     if IDexterityFTI.providedBy(fti):
         # DX
         if HAS_DEXTERITY_REFERENCEABLE:
-            if DX.IReferenceable.providedBy(ob):
+            if DX.IReferenceable.providedBy(obj):
                 uid_catalog = api.portal.get_tool('uid_catalog')
-                path = '/'.join(ob.getPhysicalPath())
+                path = '/'.join(obj.getPhysicalPath())
                 uid_catalog.uncatalog_object(path)
         # noinspection PyArgumentList
-        IMutableUUID(ob).set(str(uuid))
+        IMutableUUID(obj).set(str(uuid))
         if HAS_DEXTERITY_REFERENCEABLE:
-            if DX.IReferenceable.providedBy(ob):
+            if DX.IReferenceable.providedBy(obj):
                 uid_catalog = api.portal.get_tool('uid_catalog')
-                path = '/'.join(ob.getPhysicalPath())
-                uid_catalog.catalog_object(ob, path)
+                path = '/'.join(obj.getPhysicalPath())
+                uid_catalog.catalog_object(obj, path)
     elif HAS_ARCHETYPES:
-        if AT.IReferenceable.providedBy(ob):
+        if AT.IReferenceable.providedBy(obj):
             # AT
-            ob._uncatalogUID(api.portal.get())
-            ob._setUID(uuid)
+            obj._uncatalogUID(api.portal.get())
+            obj._setUID(uuid)
 
 
 @configure.transmogrifier.blueprint.component(name='plone.uuid.set')
 class SetUUID(ConditionalBlueprint):
     def __iter__(self):
-        portal = api.portal.get()
         for item in self.previous:
             if self.condition(item) and '_uuid' in item:
-                set_uuid(traverse(portal, item['_path']), item['_uuid'])
+                set_uuid(api.content.get(path=item['_path']), item['_uuid'])
             yield item

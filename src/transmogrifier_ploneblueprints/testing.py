@@ -1,16 +1,15 @@
 # -*- coding:utf-8 -*-
-import os
-import tempfile
-import shutil
-
-from transmogrifier.registry import configuration_registry
-
 from plone.app.testing import FunctionalTesting
 from plone.app.testing import IntegrationTesting
 from plone.app.testing import PLONE_FIXTURE
 from plone.app.testing import PloneSandboxLayer
-from plone.app.testing import TEST_USER_ID
 from plone.app.testing import setRoles
+from plone.app.testing import TEST_USER_ID
+from transmogrifier.registry import configuration_registry
+
+import os
+import shutil
+import tempfile
 
 
 class PloneBlueprints(PloneSandboxLayer):
