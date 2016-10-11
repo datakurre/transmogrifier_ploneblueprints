@@ -1,41 +1,6 @@
 # -*- coding: utf-8 -*-
-import Acquisition
 import base64
 import email
-import posixpath
-
-
-# collective/transmogrifier/utils.py
-# by rpatterson
-
-def pathsplit(path, ospath=posixpath):
-    dirname, basename = ospath.split(path)
-    if dirname == ospath.sep:
-        yield dirname
-    elif dirname:
-        for elem in pathsplit(dirname):
-            yield elem
-        yield basename
-    elif basename:
-        yield basename
-
-
-# collective/transmogrifier/utils.py
-# by rpatterson
-
-# noinspection PyProtectedMember,PyUnresolvedReferences
-def explicit_traverse(context, path, default=None):
-    """Resolve an object without acquisition or views
-    """
-    for element in pathsplit(path.strip(posixpath.sep)):
-        try:
-            base = Acquisition.aq_base(context)
-            context = base._getOb(element, default=default)
-        except AttributeError:
-            return default
-        if context is default:
-            break
-    return context
 
 
 def string_to_message(item):

@@ -19,6 +19,7 @@ import Acquisition
 import logging
 import pkg_resources
 
+
 logger = logging.getLogger('transmogrifier')
 
 
@@ -91,10 +92,7 @@ def demarshall(obj, message):
     fti = types_tool.get(obj.portal_type)
     if IDexterityFTI.providedBy(fti):
         # DX
-        try:
-            initializeObjectFromSchemata(obj, iterSchemata(obj), message)
-        except Exception:
-            raise
+        initializeObjectFromSchemata(obj, iterSchemata(obj), message)
     elif HAS_ARCHETYPES:
         # AT
         initializeObject(obj, iterFields(obj), message)
@@ -105,9 +103,10 @@ class RFC822Demarshall(ConditionalBlueprint):
     def __iter__(self):
         key = self.options.get('key')
         for item in self.previous:
-            if self.condition(item) and isinstance(item, Message):
+            message = item.get(key)
+            if self.condition(item) and isinstance(message, Message):
                 obj = api.content.get(path=item['_path'])
-                demarshall(obj, item[key])
+                demarshall(obj, message)
             yield item
 
 

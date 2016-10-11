@@ -16,6 +16,7 @@ class GetProperties(ConditionalBlueprint):
                 properties = [
                     (key, obj.getProperty(key), obj.getPropertyType(key))
                     for key in obj.propertyIds()
+                    if hasattr(Acquisition.aq_base(obj), key)  # noqa
                 ]
                 item['_properties'] = properties
 

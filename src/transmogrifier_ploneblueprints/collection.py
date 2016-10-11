@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 from plone import api
-from transmogrifier.blueprints import ConditionalBlueprint
+from transmogrifier.blueprints.base import Blueprint
 from venusianconfiguration import configure
 
 
 @configure.transmogrifier.blueprint.component(name='plone.collection.flatten_subcollections')  # noqa
-class FlattenSubcollections(ConditionalBlueprint):
+class FlattenSubcollections(Blueprint):
     def __iter__(self):
         for item in self.previous:
-            if self.condition(item):
+            if item.get('_type') in ['Collection', 'Topic']:
                 obj = api.content.get(
                     path='/'.join(item['_path'].split('/')[:-1]))
 

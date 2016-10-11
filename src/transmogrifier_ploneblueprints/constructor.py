@@ -1,33 +1,19 @@
-# -*- coding: utf-8 -*-
-from __future__ import print_function
+# -* coding: utf-8 -*-
 from plone import api
 from transmogrifier.blueprints import ConditionalBlueprint
 from transmogrifier.utils import defaultMatcher
-from transmogrifier_ploneblueprints.utils import explicit_traverse
+from transmogrifier.utils import to_boolean
 from venusianconfiguration import configure
+from zExceptions import NotFound
 
-import Acquisition
 import logging
 import posixpath
 
 
-# from collective/transmogrifier/sections/constructor.py
+# based on collective/transmogrifier/sections/constructor.py
 # by rpatterson, regebro, mjpieters, optilude, csenger
 
 logger = logging.getLogger('transmogrifier')
-
-
-def _constructInstance(fti, context, id_):
-    try:
-        obj = fti._constructInstance(context, id_)
-    except Exception:
-        import traceback
-        traceback.print_exc()
-        print('Fix issue manually and continue to retry...')
-        import pdb
-        pdb.set_trace()
-        obj = fti._constructInstance(context, id_)
-    return obj
 
 
 def cleanup(obj):
@@ -35,16 +21,11 @@ def cleanup(obj):
         try:
             obj.manage_delObjects([obj_id])
         except Exception as e:
-            logger.warn('Unable to clean %s because of %s' % (
-                obj[obj_id], e
-            ))
+            logger.warn('Unable to clean %s because of %s' %
+                        (obj[obj_id], e))
 
 
-def constructInstance(item, type_key_matcher, path_key_matcher,
-                      required, empty=True):
-    portal = api.portal.get()
-    types_tool = api.portal.get_tool('portal_types')
-
+def constructInstance(item, type_key_matcher, path_key_matcher, empty=True):
     keys = item.keys()
     type_key = type_key_matcher(*keys)[0]
     path_key = path_key_matcher(*keys)[0]
@@ -52,60 +33,51 @@ def constructInstance(item, type_key_matcher, path_key_matcher,
     if not (type_key and path_key):  # not enough info
         return
 
-    type_, path = item[type_key], item[path_key]
+    type_, path = item[type_key], str(item[path_key])
+    portal_path = '/'.join(api.portal.get().getPhysicalPath())
 
-    fti = types_tool.getTypeInfo(type_)
-    if fti is None:  # not an existing type
-        return
+    if path == '/' or path.rstrip(posixpath.sep) == portal_path:
+        container, id_ = posixpath.split(portal_path)
+        obj = api.portal.get()
+    else:
+        container, id_ = posixpath.split(path.strip(posixpath.sep))
+        container = posixpath.sep + container  # abs.path for api.content.get
+        try:
+            obj = api.content.get(path=posixpath.join(container, id_))
+            if obj is not None and path not in '/'.join(obj.getPhysicalPath()):
+                obj = None  # api.content.get got us lost thanks to acquisition
 
-    assert fti is not None, (
-        u'Portal type "{0:s}" not available.'.format(type_))
+        except NotFound:
+            raise Exception('Container %s does not exist or cannot contain' %
+                            container)
+    if obj is None:
+        parent = api.content.get(path=container)
+        if parent is None and container == portal_path:
+            parent = api.portal.get()
+        assert parent is not None, (
+            'Container %s does not exist for item %s' %
+            (container, path))
+        obj = api.content.create(parent, type=type_, id=id_)
 
-    path = path.encode('ASCII')
-    container, id_ = posixpath.split(path.strip('/'))
-
-    if not id_:  # site root should exist
-        return
-
-    context = explicit_traverse(portal, container, None)
-    if context is None:
-        error = 'Container %s does not exist for item %s' % (
-            container, path)
-        if required:
-            raise KeyError(error)
-        logger.warn(error)
-        return
-
-    # noinspection PyUnresolvedeferences
-    exists = getattr(Acquisition.aq_base(context), id_, None)
-    if getattr(exists, 'id', None) == id_:
-        return
-
-    obj = _constructInstance(fti, context, id_)
-
-    # For CMF <= 2.1 (aka Plone 3)
-    if hasattr(fti, '_finishConstruction'):
-        # noinspection PyProtectedMember
-        obj = fti._finishConstruction(obj)
-
-    if obj.getId() != id_:
-        item[path_key] = posixpath.join(container, obj.getId())
+    item[path_key] = '/'.join(obj.getPhysicalPath())
 
     if empty and obj.objectIds():
         cleanup(obj)
+
+    return obj
 
 
 @configure.transmogrifier.blueprint.component(name='plone.constructor')
 class Constructor(ConditionalBlueprint):
     def __iter__(self):
-        type_key = defaultMatcher(self.options, 'type-key',
-                                  self.name, 'type', ('portal_type', 'Type'))
-        path_key = defaultMatcher(self.options, 'path-key',
-                                  self.name, 'path')
-        required = bool(self.options.get('required', 0))
-        empty = bool(self.options.get('empty', 1))
+        type_key = defaultMatcher(
+            self.options, 'type-key', self.name, 'type', ('portal_type', 'Type'))  # noqa
+        path_key = defaultMatcher(
+            self.options, 'path-key', self.name, 'path')
+        empty = to_boolean(self.options.get('empty', False))
 
         for item in self.previous:
             if self.condition(item):
-                constructInstance(item, type_key, path_key, required, empty)
+                obj = constructInstance(item, type_key, path_key, empty)
+                item['_object'] = obj
             yield item

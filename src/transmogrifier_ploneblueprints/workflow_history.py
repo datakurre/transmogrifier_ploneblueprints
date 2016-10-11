@@ -2,9 +2,7 @@
 from operator import itemgetter
 from persistent.list import PersistentList
 from plone import api
-from Products.CMFCore.utils import getToolByName
 from transmogrifier.blueprints import ConditionalBlueprint
-from transmogrifier_ploneblueprints.utils import explicit_traverse
 from venusianconfiguration import configure
 
 
@@ -12,14 +10,13 @@ from venusianconfiguration import configure
     name='plone.workflow_history.set')
 class SetWorkflow(ConditionalBlueprint):
     def __iter__(self):
-        portal = api.portal.get()
-        wftool = getToolByName(portal, 'portal_workflow')
+        wf_tool = api.portal.get_tool('portal_workflow')
         for item in self.previous:
             if self.condition(item):
-                ob = explicit_traverse(portal, item['_path'])
-                ob.workflow_history = item['_workflow_history'] or {}
-                for wf in wftool.getWorkflowsFor(ob):
-                    wf.updateRoleMappingsFor(ob)
+                obj = api.content.get(path=item['_path'])
+                obj.workflow_history = item['_workflow_history'] or {}
+                for wf in wf_tool.getWorkflowsFor(obj):
+                    wf.updateRoleMappingsFor(obj)
             yield item
 
 
@@ -103,18 +100,17 @@ def intranet_workflow(history):
 class MigratePloneToIntranetWorkflow(ConditionalBlueprint):
     """Migrates 'plone/folder_workflow' to 'intranet[_folder]_workflow'"""
     def __iter__(self):
-        portal = api.portal.get()
-        wftool = getToolByName(portal, 'portal_workflow')
+        wf_tool = api.portal.get_tool('portal_workflow')
         for item in self.previous:
             if self.condition(item):
-                ob = explicit_traverse(portal, item['_path'])
-                history = ob.workflow_history
+                obj = api.content.get(path=item['_path'])
+                history = obj.workflow_history
                 if 'folder_workflow' in history:
                     history['intranet_folder_workflow'] = \
                         intranet_folder_workflow(history)
                 elif 'plone_workflow' in history:
                     history['intranet_workflow'] = \
                         intranet_workflow(history)
-                for wf in wftool.getWorkflowsFor(ob):
-                    wf.updateRoleMappingsFor(ob)
+                for wf in wf_tool.getWorkflowsFor(obj):
+                    wf.updateRoleMappingsFor(obj)
             yield item

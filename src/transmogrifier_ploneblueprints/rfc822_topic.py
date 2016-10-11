@@ -4,7 +4,7 @@ from plone import api
 from plone.rfc822 import constructMessage
 from plone.rfc822.defaultfields import BaseFieldMarshaler
 from plone.rfc822.interfaces import IFieldMarshaler
-from transmogrifier.blueprints import ConditionalBlueprint
+from transmogrifier.blueprints import Blueprint
 from transmogrifier_ploneblueprints.rfc822 import marshall
 from venusianconfiguration import configure
 from zope import schema
@@ -925,27 +925,25 @@ def has_subtopics(ob):
 
 
 @configure.transmogrifier.blueprint.component(name='plone.rfc822.marshall_collection')  # noqa
-class RFC822MarshallTopicsAsCollections(ConditionalBlueprint):
+class RFC822MarshallTopicsAsCollections(Blueprint):
     def __iter__(self):
         key = self.options.get('key')
         for item in self.previous:
-            if self.condition(item):
-                if '_object' in item and key:
-                    item[key] = marshall(item['_object'])
+            if item.get('_type') == 'Topic':
+                item[key] = marshall(item['_object'])
 
                 # For Topics, also marshall required fields for collections
-                if item['_type'] == 'Topic':
-                    obj = item['_object']
-                    message = marshall_topic_as_collection(obj)
-                    for name in getFieldNamesInOrder(IMockCollection):
-                        item[key][name] = message[name]
+                obj = item['_object']
+                message = marshall_topic_as_collection(obj)
+                for name in getFieldNamesInOrder(IMockCollection):
+                    item[key][name] = message[name]
 
-                    # Because sub-collections are not supported, re-create
-                    # the main topic as separate collection...
-                    if has_subtopics(obj):
-                        id_ = item['_path'].split('/')[-1]
-                        while id_ in obj.objectIds():
-                            id_ += '-{0:s}'.format(id_)
-                        item['_path'] += '/{0:s}'.format(id_)
+                # Because sub-collections are not supported, re-create
+                # the main topic as separate collection...
+                if has_subtopics(obj):
+                    id_ = item['_path'].split('/')[-1]
+                    while id_ in obj.objectIds():
+                        id_ += '-{0:s}'.format(id_)
+                    item['_path'] += '/{0:s}'.format(id_)
 
             yield item
