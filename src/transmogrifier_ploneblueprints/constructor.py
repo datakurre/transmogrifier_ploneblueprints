@@ -6,6 +6,7 @@ from transmogrifier.utils import to_boolean
 from venusianconfiguration import configure
 from zExceptions import NotFound
 
+import Acquisition
 import logging
 import posixpath
 
@@ -46,7 +47,8 @@ def constructInstance(item, type_key_matcher, path_key_matcher, empty=True):
             obj = api.content.get(path=posixpath.join(container, id_))
             if obj is not None and path not in '/'.join(obj.getPhysicalPath()):
                 obj = None  # api.content.get got us lost thanks to acquisition
-
+        except AttributeError:
+            obj = None  # api.content.get got us lost thanks go acquisition
         except NotFound:
             raise Exception('Container %s does not exist or cannot contain' %
                             container)
