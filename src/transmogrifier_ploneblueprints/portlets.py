@@ -17,6 +17,13 @@ from zope.interface import providedBy
 import logging
 import tarfile
 
+try:
+    # Fix error where portlet assignment was missing required value
+    import plone.portlet.collection.collection
+    plone.portlet.collection.collection.Assignment.exclude_context = True
+except ImportError:
+    pass
+
 
 logger = logging.getLogger('transmogrifier')
 
