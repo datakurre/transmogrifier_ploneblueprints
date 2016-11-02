@@ -29,5 +29,8 @@ bootstrap-buildout.py:
 bin/buildout: bootstrap-buildout.py $(BUILDOUT_FILENAME)
 	python bootstrap-buildout.py -c $(BUILDOUT_FILENAME)
 
+bin/code-analysis: $(BUILDOUT_BIN) $(BUILDOUT_FILENAME) setup.py
+	$(BUILDOUT_BIN) $(BUILDOUT_ARGS) install code-analysis
+
 bin/test: $(BUILDOUT_BIN) $(BUILDOUT_FILENAME) setup.py
 	$(BUILDOUT_BIN) $(BUILDOUT_ARGS) install test

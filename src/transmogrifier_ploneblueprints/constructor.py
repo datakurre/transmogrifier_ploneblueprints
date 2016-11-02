@@ -6,7 +6,6 @@ from transmogrifier.utils import to_boolean
 from venusianconfiguration import configure
 from zExceptions import NotFound
 
-import Acquisition
 import logging
 import posixpath
 

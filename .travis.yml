@@ -1,13 +1,11 @@
 language: python
 python:
-- 2.6
 - 2.7
 sudo: false
 before_install:
-- sed -i.old -e s/4.3.x/$PLONE/g buildout.cfg
+- sed -i.old -e s/4-latest/$PLONE/g buildout.cfg
 install:
-- python bootstrap.py
-- bin/buildout -N -t 3 versions:zc.recipe.egg=
+- make bin/code-analysis
 script:
 - bin/code-analysis
 #- bin/test
@@ -15,8 +13,8 @@ cache:
   directories:
   - eggs
 env:
-  - PLONE=4.1.x
-  - PLONE=4.2.x
-  - PLONE=4.3.x
+  - PLONE=4.1-latest
+  - PLONE=4.2-latest
+  - PLONE=4.3-latest
 notifications:
   flowdock: 827dea8da0905dbc8399d66eb75868df

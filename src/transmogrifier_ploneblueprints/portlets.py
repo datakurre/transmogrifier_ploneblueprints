@@ -121,7 +121,10 @@ def get_portlet_assignment_xml(context, prefix):
     doc.appendChild(node)
     xml = patch_get_portlets_xml(doc.toprettyxml(' '), prefix)
     doc.unlink()
-    return xml
+    if xml.strip().endswith('<portlets/>'):
+        return None
+    else:
+        return xml
 
 
 @configure.transmogrifier.blueprint.component(name='plone.portlets.get')
@@ -169,8 +172,9 @@ class SetPortlets(ConditionalBlueprint):
 
         for item in self.previous:
             if self.condition(item):
-                if key in item.keys():
+                portlets_xml = item.get(key)
+                if portlets_xml:
                     portlets_xml = patch_set_portlets_xml(
-                        item[key], prefix=prefix)
+                        portlets_xml, prefix=prefix)
                     import_portlets(portal_setup, portlets_xml)
             yield item
