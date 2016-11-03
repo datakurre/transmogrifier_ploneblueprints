@@ -4,6 +4,7 @@ from plone import api
 from plone.uuid.interfaces import IMutableUUID
 from plone.uuid.interfaces import IUUID
 from transmogrifier.blueprints import ConditionalBlueprint
+from transmogrifier_ploneblueprints.utils import resolve_object
 from venusianconfiguration import configure
 
 import Acquisition
@@ -78,9 +79,10 @@ class GetPathFromUUID(ConditionalBlueprint):
 @configure.transmogrifier.blueprint.component(name='plone.uuid.get_parent')
 class GetParentUUID(ConditionalBlueprint):
     def __iter__(self):
+        context = self.transmogrifier.context
         for item in self.previous:
             if self.condition(item):
-                obj = item['_object']
+                obj = resolve_object(context, item)
                 parent = Acquisition.aq_parent(obj)
                 uuid_ = IUUID(parent, None)
                 if uuid_ is not None:
@@ -96,9 +98,10 @@ class GetParentUUID(ConditionalBlueprint):
 @configure.transmogrifier.blueprint.component(name='plone.uuid.get')
 class GetUUID(ConditionalBlueprint):
     def __iter__(self):
+        context = self.transmogrifier.context
         for item in self.previous:
             if self.condition(item):
-                obj = item['_object']
+                obj = resolve_object(context, item)
                 uuid_ = IUUID(obj, None)
                 if uuid_ is not None:
                     item['_uuid'] = uuid_
@@ -137,7 +140,9 @@ def set_uuid(obj, uuid):
 @configure.transmogrifier.blueprint.component(name='plone.uuid.set')
 class SetUUID(ConditionalBlueprint):
     def __iter__(self):
+        context = self.transmogrifier.context
         for item in self.previous:
             if self.condition(item) and '_uuid' in item:
-                set_uuid(api.content.get(path=item['_path']), item['_uuid'])
+                obj = resolve_object(context, item)
+                set_uuid(obj, item['_uuid'])
             yield item

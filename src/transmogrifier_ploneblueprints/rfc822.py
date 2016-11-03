@@ -9,6 +9,7 @@ from plone.rfc822.defaultfields import UnicodeValueFieldMarshaler
 from plone.rfc822.interfaces import IFieldMarshaler
 from plone.rfc822.interfaces import IPrimaryField
 from transmogrifier.blueprints import ConditionalBlueprint
+from transmogrifier_ploneblueprints.utils import resolve_object
 from venusianconfiguration import configure
 from zope.component import adapter
 from zope.interface import alsoProvides
@@ -79,11 +80,12 @@ def marshall(obj):
 @configure.transmogrifier.blueprint.component(name='plone.rfc822.marshall')
 class RFC822Marshall(ConditionalBlueprint):
     def __iter__(self):
+        context = self.transmogrifier.context
         key = self.options.get('key')
         for item in self.previous:
             if self.condition(item):
-                if '_object' in item and key:
-                    item[key] = marshall(item['_object'])
+                obj = resolve_object(context, item)
+                item[key] = marshall(obj)
             yield item
 
 
@@ -101,11 +103,12 @@ def demarshall(obj, message):
 @configure.transmogrifier.blueprint.component(name='plone.rfc822.demarshall')
 class RFC822Demarshall(ConditionalBlueprint):
     def __iter__(self):
+        context = self.transmogrifier.context
         key = self.options.get('key')
         for item in self.previous:
             message = item.get(key)
             if self.condition(item) and isinstance(message, Message):
-                obj = api.content.get(path=item['_path'])
+                obj = resolve_object(context, item)
                 demarshall(obj, message)
             yield item
 

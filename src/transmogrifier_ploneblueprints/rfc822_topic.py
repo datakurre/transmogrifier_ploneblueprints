@@ -6,6 +6,7 @@ from plone.rfc822.defaultfields import BaseFieldMarshaler
 from plone.rfc822.interfaces import IFieldMarshaler
 from transmogrifier.blueprints import Blueprint
 from transmogrifier_ploneblueprints.rfc822 import marshall
+from transmogrifier_ploneblueprints.utils import resolve_object
 from venusianconfiguration import configure
 from zope import schema
 from zope.interface import implementer
@@ -927,10 +928,12 @@ def has_subtopics(ob):
 @configure.transmogrifier.blueprint.component(name='plone.rfc822.marshall_collection')  # noqa
 class RFC822MarshallTopicsAsCollections(Blueprint):
     def __iter__(self):
+        context = self.transmogrifier.context
         key = self.options.get('key')
         for item in self.previous:
             if item.get('_type') == 'Topic':
-                item[key] = marshall(item['_object'])
+                obj = resolve_object(context, item)
+                item[key] = marshall(obj)
 
                 # For Topics, also marshall required fields for collections
                 obj = item['_object']
