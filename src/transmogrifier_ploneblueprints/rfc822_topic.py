@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
 from DateTime import DateTime
+from json import JSONDecoder
+from json import JSONEncoder
+from json import scanner
+from json.decoder import c_scanstring
+from json.decoder import py_scanstring
 from plone import api
 from plone.rfc822 import constructMessage
 from plone.rfc822.defaultfields import BaseFieldMarshaler
@@ -14,7 +19,6 @@ from zope.interface import Interface
 from zope.schema import getFieldNamesInOrder
 
 import Acquisition
-import json
 import logging
 
 
@@ -881,6 +885,32 @@ class MockCollection(object):
         self.sort_on = sort_on
 
 
+class DateTimeAwareJSONEncoder(JSONEncoder):
+    def default(self, o):
+        if isinstance(o, DateTime):
+            return str(o)
+        else:
+            return super(DateTimeAwareJSONEncoder, self).default(o)
+
+
+def parse_string(*args):
+    s, pos = c_scanstring and c_scanstring(*args) or py_scanstring(*args)
+    try:
+        dt = DateTime(s)
+        if str(dt) == s:
+            return dt, pos
+    except (SyntaxError, TypeError, ValueError):
+        pass
+    return s, pos
+
+
+class DateTimeAwareJSONDecoder(JSONDecoder):
+    def __init__(self, *args, **kwargs):
+        super(DateTimeAwareJSONDecoder, self).__init__(*args, **kwargs)
+        self.parse_string = parse_string
+        self.scan_once = scanner.py_make_scanner(self)
+
+
 @configure.adapter.factory(for_=(Interface, schema.Dict))
 @implementer(IFieldMarshaler)
 class DictionaryFieldMarshaler(BaseFieldMarshaler):
@@ -888,7 +918,7 @@ class DictionaryFieldMarshaler(BaseFieldMarshaler):
 
     def encode(self, value, charset='utf-8', primary=False):
         if value:
-            return json.dumps(value)
+            return DateTimeAwareJSONEncoder().encode(value)
         else:
             return super(DictionaryFieldMarshaler, self).encode(
                 value, charset=charset, primary=primary)
@@ -897,7 +927,7 @@ class DictionaryFieldMarshaler(BaseFieldMarshaler):
     def decode(self, value, message=None, charset='utf-8',
                contentType=None, primary=False):
         if value:
-            return json.loads(value)
+            return DateTimeAwareJSONDecoder().decode(value)
         else:
             return super(DictionaryFieldMarshaler, self).decode(
                 value, message=message, charset=charset,
