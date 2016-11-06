@@ -3,6 +3,7 @@ from DateTime import DateTime
 from plone import api
 from plone.api.exc import InvalidParameterError
 from transmogrifier.blueprints import ConditionalBlueprint
+from transmogrifier_ploneblueprints.utils import resolve_object
 from venusianconfiguration import configure
 
 import pkg_resources
@@ -21,6 +22,7 @@ else:
 @configure.transmogrifier.blueprint.component(name='plone.dates.set')
 class SetAndFixKnownDates(ConditionalBlueprint):
     def __iter__(self):
+        context = self.transmogrifier.context
         default_timezone = self.options.get('default_timezone') or 'UTC'
         if HAS_PAC:
             try:
@@ -34,7 +36,7 @@ class SetAndFixKnownDates(ConditionalBlueprint):
 
         for item in self.previous:
             if self.condition(item):
-                obj = api.content.get(path=item['_path'])
+                obj = resolve_object(context, item)
                 if 'modification_date' in item:
                     obj.setModificationDate(item['modification_date'])
                 if 'creation_date' in item:
@@ -45,7 +47,7 @@ class SetAndFixKnownDates(ConditionalBlueprint):
                         obj.creation_date = item['creation_date']
 
                 if HAS_PAC and item.get('_type') == 'Event':
-                    obj = api.content.get(path=item['_path'])
+                    obj = resolve_object(context, item)
                     obj.start = pydt(DateTime(obj.start)).astimezone(tz)
                     obj.end = pydt(DateTime(obj.end)).astimezone(tz)
 

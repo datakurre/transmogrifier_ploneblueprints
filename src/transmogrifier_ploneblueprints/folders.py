@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-from plone import api
 from transmogrifier.blueprints import ConditionalBlueprint
+from transmogrifier_ploneblueprints.utils import resolve_object
 from venusianconfiguration import configure
 
 import Acquisition
@@ -25,18 +25,18 @@ except pkg_resources.DistributionNotFound:
 class GetObjectPositionInParent(ConditionalBlueprint):
     # noinspection PyUnresolvedReferences
     def __iter__(self):
+        context = self.transmogrifier.context
         key = self.options.get('key', '_gopip')
         for item in self.previous:
             if self.condition(item):
-                if '_object' in item and key:
-                    obj = item['_object']
-                    id_ = obj.getId()
-                    parent = Acquisition.aq_parent(obj)
-                    if hasattr(Acquisition.aq_base(parent),
-                               'getObjectPosition'):
-                        item[key] = parent.getObjectPosition(id_)
-                    else:
-                        item[key] = None
+                obj = resolve_object(context, item)
+                id_ = obj.getId()
+                parent = Acquisition.aq_parent(obj)
+                if hasattr(Acquisition.aq_base(parent),
+                           'getObjectPosition'):
+                    item[key] = parent.getObjectPosition(id_)
+                else:
+                    item[key] = None
             yield item
 
 
@@ -44,16 +44,16 @@ class GetObjectPositionInParent(ConditionalBlueprint):
 class SetObjectPositionInParent(ConditionalBlueprint):
     # noinspection PyUnresolvedReferences
     def __iter__(self):
+        context = self.transmogrifier.context
         key = self.options.get('key', '_gopip')
         for item in self.previous:
             position = item.get(key)
             if self.condition(item) and position is not None:
-                obj = api.content.get(item['_path'])
-                if obj:
-                    id_ = obj.getId()
-                    parent = Acquisition.aq_parent(obj)
-                    if hasattr(Acquisition.aq_base(parent),
-                               'moveObjectToPosition'):
-                        parent.moveObjectToPosition(
-                            id_, position, suppress_events=False)
+                obj = resolve_object(context, item)
+                id_ = obj.getId()
+                parent = Acquisition.aq_parent(obj)
+                if hasattr(Acquisition.aq_base(parent),
+                           'moveObjectToPosition'):
+                    parent.moveObjectToPosition(
+                        id_, position, suppress_events=False)
             yield item

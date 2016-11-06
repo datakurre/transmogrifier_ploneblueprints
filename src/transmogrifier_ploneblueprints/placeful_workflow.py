@@ -3,19 +3,21 @@ from Acquisition import aq_base
 from plone import api
 from plone.api.exc import InvalidParameterError
 from transmogrifier.blueprints import ConditionalBlueprint
+from transmogrifier_ploneblueprints.utils import resolve_object
 from venusianconfiguration import configure
 
 
 @configure.transmogrifier.blueprint.component(name='plone.placeful_workflow.get')  # noqa
 class GetPlacefulWorkflow(ConditionalBlueprint):
     def __iter__(self):
+        context = self.transmogrifier.context
         try:
             tool = api.portal.get_tool('portal_placeful_workflow')
         except InvalidParameterError:
             tool = None
         for item in self.previous:
             if tool and self.condition(item):
-                obj = item['_object']
+                obj = resolve_object(context, item)
                 config = tool.getWorkflowPolicyConfig(obj)
                 if config is not None and (config.getPolicyInId() or
                                            config.getPolicyBelowId()):
@@ -39,6 +41,7 @@ def updateRoleMappings(container):
 @configure.transmogrifier.blueprint.component(name='plone.placeful_workflow.set')  # noqa
 class SetPlacefulWorkflow(ConditionalBlueprint):
     def __iter__(self):
+        context = self.transmogrifier.context
         key = '_workflow_policy_in'
         try:
             tool = api.portal.get_tool('portal_placeful_workflow')
@@ -47,7 +50,7 @@ class SetPlacefulWorkflow(ConditionalBlueprint):
 
         for item in self.previous:
             if tool and self.condition(item) and key in item:
-                obj = api.content.get(path=item['_path'])
+                obj = resolve_object(context, item)
 
                 # Init placeful workflow policy config when required
                 if tool.getWorkflowPolicyConfig(obj) is None:

@@ -9,6 +9,7 @@ from plone.portlets.interfaces import IPortletAssignmentSettings
 from plone.portlets.interfaces import IPortletManager
 from Products.GenericSetup.utils import PrettyDocument
 from transmogrifier.blueprints import ConditionalBlueprint
+from transmogrifier_ploneblueprints.utils import resolve_object
 from venusianconfiguration import configure
 from zope.component import getUtilitiesFor
 from zope.component import queryMultiAdapter
@@ -16,6 +17,7 @@ from zope.interface import providedBy
 
 import logging
 import tarfile
+
 
 try:
     # Fix error where portlet assignment was missing required value
@@ -130,13 +132,13 @@ def get_portlet_assignment_xml(context, prefix):
 @configure.transmogrifier.blueprint.component(name='plone.portlets.get')
 class GetPortlets(ConditionalBlueprint):
     def __iter__(self):
+        context = self.transmogrifier.context
         key = self.options.get('key', '_portlets')
         prefix = self.options.get('prefix', '')  # prefix to remove
         for item in self.previous:
             if self.condition(item):
-                if '_object' in item.keys():
-                    obj = item['_object']
-                    item[key] = get_portlet_assignment_xml(obj, prefix) or None
+                obj = resolve_object(context, item)
+                item[key] = get_portlet_assignment_xml(obj, prefix) or None
             yield item
 
 
