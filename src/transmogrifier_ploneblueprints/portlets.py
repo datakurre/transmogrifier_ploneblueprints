@@ -10,6 +10,7 @@ from plone.portlets.interfaces import IPortletManager
 from Products.GenericSetup.utils import PrettyDocument
 from transmogrifier.blueprints import ConditionalBlueprint
 from transmogrifier_ploneblueprints.utils import resolve_object
+from transmogrifier_ploneblueprints.utils import traverse
 from venusianconfiguration import configure
 from zope.component import getUtilitiesFor
 from zope.component import queryMultiAdapter
@@ -30,7 +31,8 @@ except ImportError:
 logger = logging.getLogger('transmogrifier')
 
 
-def extract_mapping(doc, node, manager_name, category, key, mapping):
+# noinspection PyArgumentList
+def extract_mapping(manager_name, category, key, mapping):
     portlets_schemata = dict([
         (iface, name) for name, iface
         in getUtilitiesFor(IPortletTypeInterface)
@@ -45,7 +47,7 @@ def extract_mapping(doc, node, manager_name, category, key, mapping):
                 break
 
         if type_ is not None:
-            child = doc.createElement('assignment')
+            child = PrettyDocument().createElement('assignment')
             child.setAttribute('manager', manager_name)
             child.setAttribute('category', category)
             child.setAttribute('key', key)
@@ -59,9 +61,35 @@ def extract_mapping(doc, node, manager_name, category, key, mapping):
             child.setAttribute('visible', repr(visible))
 
             handler = IPortletAssignmentExportImportHandler(assignment)
-            # noinspection PyArgumentList
-            handler.export_assignment(schema, doc, child)
+            handler.export_assignment(schema, PrettyDocument(), child)
+
+            yield child
+
+
+def get_portlet_assignment_xml(context, prefix):
+    for manager_name, manager in getUtilitiesFor(IPortletManager):
+        mapping = queryMultiAdapter((context, manager),
+                                    IPortletAssignmentMapping)
+        if mapping is None:
+            continue
+
+        mapping = mapping.__of__(context)
+
+        key = '/'.join(context.getPhysicalPath())
+        if key.startswith(prefix):
+            key = key[len(prefix):]
+        key = key or '/'
+
+        for child in extract_mapping(
+                manager_name, CONTEXT_CATEGORY, key, mapping):
+            doc = PrettyDocument()
+            node = doc.createElement('portlets')
             node.appendChild(child)
+            doc.appendChild(node)
+            xml = patch_get_portlets_xml(doc.toprettyxml(' '), prefix)
+            doc.unlink()
+
+            yield xml
 
 
 def patch_get_portlets_xml(xml, prefix=None):
@@ -84,7 +112,7 @@ def patch_set_portlets_xml(xml, prefix=None):
     portal_path = '/'.join(portal.getPhysicalPath())
     if prefix:
         try:
-            prefix_target = portal.unrestrictedTraverse(prefix.split('/'))
+            prefix_target = traverse(portal, prefix)
             prefix = '/'.join(prefix_target.getPhysicalPath())
         except (AttributeError, KeyError):
             prefix = None
@@ -101,34 +129,6 @@ def patch_set_portlets_xml(xml, prefix=None):
     return xml
 
 
-def get_portlet_assignment_xml(context, prefix):
-    doc = PrettyDocument()
-    node = doc.createElement('portlets')
-    for manager_name, manager in getUtilitiesFor(IPortletManager):
-        mapping = queryMultiAdapter((context, manager),
-                                    IPortletAssignmentMapping)
-        if mapping is None:
-            continue
-
-        mapping = mapping.__of__(context)
-
-        key = '/'.join(context.getPhysicalPath())
-        if key.startswith(prefix):
-            key = key[len(prefix):]
-        key = key or '/'
-
-        extract_mapping(doc, node, manager_name, CONTEXT_CATEGORY,
-                        key, mapping)
-
-    doc.appendChild(node)
-    xml = patch_get_portlets_xml(doc.toprettyxml(' '), prefix)
-    doc.unlink()
-    if xml.strip().endswith('<portlets/>'):
-        return None
-    else:
-        return xml
-
-
 @configure.transmogrifier.blueprint.component(name='plone.portlets.get')
 class GetPortlets(ConditionalBlueprint):
     def __iter__(self):
@@ -138,7 +138,7 @@ class GetPortlets(ConditionalBlueprint):
         for item in self.previous:
             if self.condition(item):
                 obj = resolve_object(context, item)
-                item[key] = get_portlet_assignment_xml(obj, prefix) or None
+                item[key] = tuple(get_portlet_assignment_xml(obj, prefix))
             yield item
 
 
@@ -174,9 +174,7 @@ class SetPortlets(ConditionalBlueprint):
 
         for item in self.previous:
             if self.condition(item):
-                portlets_xml = item.get(key)
-                if portlets_xml:
-                    portlets_xml = patch_set_portlets_xml(
-                        portlets_xml, prefix=prefix)
-                    import_portlets(portal_setup, portlets_xml)
+                for portlets_xml in item.get(key):
+                    import_portlets(portal_setup, patch_set_portlets_xml(
+                        portlets_xml, prefix=prefix))
             yield item
