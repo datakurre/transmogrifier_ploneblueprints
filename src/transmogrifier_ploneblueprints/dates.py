@@ -37,14 +37,18 @@ class SetAndFixKnownDates(ConditionalBlueprint):
         for item in self.previous:
             if self.condition(item):
                 obj = resolve_object(context, item)
-                if 'modification_date' in item:
-                    obj.setModificationDate(item['modification_date'])
                 if 'creation_date' in item:
                     try:
                         obj.setCreationDate(item['creation_date'])
                     except AttributeError:
                         # dexterity content does not have setCreationDate
                         obj.creation_date = item['creation_date']
+                if 'modification_date' in item:
+                    obj.setModificationDate(item['modification_date'])
+                if 'effective_date' in item:
+                    obj.setModificationDate(item['effective_date'])
+                if 'expiration_date' in item:
+                    obj.setModificationDate(item['expiration_date'])
 
                 if HAS_PAC and item.get('_type') == 'Event':
                     obj = resolve_object(context, item)
