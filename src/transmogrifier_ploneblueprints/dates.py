@@ -46,9 +46,9 @@ class SetAndFixKnownDates(ConditionalBlueprint):
                 if 'modification_date' in item:
                     obj.setModificationDate(item['modification_date'])
                 if 'effective_date' in item:
-                    obj.setModificationDate(item['effective_date'])
+                    obj.setEffectiveDate(item['effective_date'])
                 if 'expiration_date' in item:
-                    obj.setModificationDate(item['expiration_date'])
+                    obj.setExpirationDate(item['expiration_date'])
 
                 if HAS_PAC and item.get('_type') == 'Event':
                     obj = resolve_object(context, item)
