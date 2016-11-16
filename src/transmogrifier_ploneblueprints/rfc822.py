@@ -102,7 +102,10 @@ def demarshall(obj, message):
     fti = types_tool.get(obj.portal_type)
     if IDexterityFTI.providedBy(fti):
         # DX
+        payload = message._payload
+        message._payload = None
         initializeObjectFromSchemata(DublinCore(obj), [IDublinCore], message)
+        message._payload = payload
         initializeObjectFromSchemata(obj, iterSchemata(obj), message)
     elif HAS_ARCHETYPES:
         # AT
