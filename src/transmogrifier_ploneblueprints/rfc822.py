@@ -35,6 +35,11 @@ else:
 
 try:
     pkg_resources.get_distribution('plone.dexterity')
+    from plone.app.dexterity.behaviors.metadata import IBasic
+    from plone.app.dexterity.behaviors.metadata import ICategorization
+    from plone.app.dexterity.behaviors.metadata import IDublinCore
+    from plone.app.dexterity.behaviors.metadata import IOwnership
+    from plone.app.dexterity.behaviors.metadata import IPublication
 except pkg_resources.DistributionNotFound:
     HAS_DEXTERITY = False
 
@@ -67,6 +72,16 @@ def marshall(obj):
     if HAS_DEXTERITY and IDexterityFTI.providedBy(fti):
         # DX
         message = constructMessageFromSchemata(obj, iterSchemata(obj))
+        # Ensure that all DC fields are included
+        for schema in (IBasic, ICategorization, IOwnership, IPublication):
+            try:
+                dc = constructMessageFromSchemata(obj, [schema])
+            except TypeError:  # May fail when obj is not properly initialized
+                continue
+            for name in [key for key in dc.keys() if not message[key]]:
+                if name in message.keys():
+                    del message[name]
+                message[name] = dc[name]
     elif HAS_ARCHETYPES and hasattr(Acquisition.aq_base(obj), 'schema'):
         # AT
         message = constructMessage(obj, iterFields(obj))
@@ -94,6 +109,7 @@ def demarshall(obj, message):
     fti = types_tool.get(obj.portal_type)
     if IDexterityFTI.providedBy(fti):
         # DX
+        initializeObjectFromSchemata(obj, [IDublinCore], message)
         initializeObjectFromSchemata(obj, iterSchemata(obj), message)
     elif HAS_ARCHETYPES:
         # AT
