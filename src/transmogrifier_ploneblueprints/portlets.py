@@ -3,7 +3,11 @@ from io import BytesIO
 from plone import api
 from plone.app.portlets.exportimport.interfaces import IPortletAssignmentExportImportHandler  # noqa
 from plone.app.portlets.interfaces import IPortletTypeInterface
+from plone.portlets.constants import CONTENT_TYPE_CATEGORY
 from plone.portlets.constants import CONTEXT_CATEGORY
+from plone.portlets.constants import GROUP_CATEGORY
+from plone.portlets.constants import USER_CATEGORY
+from plone.portlets.interfaces import ILocalPortletAssignmentManager
 from plone.portlets.interfaces import IPortletAssignmentMapping
 from plone.portlets.interfaces import IPortletAssignmentSettings
 from plone.portlets.interfaces import IPortletManager
@@ -90,6 +94,49 @@ def get_portlet_assignment_xml(context, prefix):
             doc.unlink()
 
             yield xml
+
+
+def get_portlet_blacklist_xml(context, prefix):
+    return_value = False
+
+    doc = PrettyDocument()
+    node = doc.createElement('portlets')
+
+    key = '/'.join(context.getPhysicalPath())
+    if key.startswith(prefix):
+        key = key[len(prefix):]
+    key = key or '/'
+
+    for manager_name, manager in getUtilitiesFor(IPortletManager):
+        assignable = queryMultiAdapter((context, manager),
+                                       ILocalPortletAssignmentManager)
+        if assignable is None:
+            continue
+
+        for category in (USER_CATEGORY, GROUP_CATEGORY, CONTENT_TYPE_CATEGORY, CONTEXT_CATEGORY):  # noqa
+            child = doc.createElement('blacklist')
+            child.setAttribute('manager', manager_name)
+            child.setAttribute('category', category)
+            child.setAttribute('location', key)
+
+            status = assignable.getBlacklistStatus(category)
+            if status:
+                child.setAttribute('status', u'block')
+                return_value = True
+            elif not status:
+                child.setAttribute('status', u'show')
+                return_value = True
+            else:
+                child.setAttribute('status', u'acquire')
+
+            node.appendChild(child)
+
+    doc.appendChild(node)
+    xml = doc.toprettyxml(' ')
+    doc.unlink()
+
+    if return_value:
+        yield xml
 
 
 def patch_get_portlets_xml(xml, prefix=None):
