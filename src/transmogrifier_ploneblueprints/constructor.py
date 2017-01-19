@@ -53,6 +53,7 @@ def constructInstance(context, item,
             'Container %s does not exist for item %s' %
             (container, path))
         obj = api.content.create(parent, type=type_, id=id_)
+        cleanup(obj)  # always purge new objects
 
     item[path_key] = '/'.join(obj.getPhysicalPath())[len(portal_path):]
 
