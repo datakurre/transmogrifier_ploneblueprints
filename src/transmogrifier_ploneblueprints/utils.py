@@ -53,7 +53,11 @@ def resolve_object(context, item, object_key='_object', uuid_key='_uuid',
 
     # 2) by uuid
     uuid = item.get(uuid_key)
-    obj = uuid and api.content.get(UID=uuid)
+    pc = api.portal.get_tool('portal_catalog').unrestrictedSearchResults
+    if uuid:
+        for brain in pc(UID=uuid):
+            obj = brain._unrestrictedGetObject()
+            break
     if obj is not None:
         return obj
 
