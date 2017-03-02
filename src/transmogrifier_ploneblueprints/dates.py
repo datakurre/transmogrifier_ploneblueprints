@@ -50,6 +50,12 @@ class SetAndFixKnownDates(ConditionalBlueprint):
                 if 'expiration_date' in item:
                     obj.setExpirationDate(item['expiration_date'])
 
+                # Fix issue where expiration date was before effective date
+                effective = obj.effective()
+                expires = obj.expires()
+                if effective and expires and expires < effective:
+                    obj.setExpirationDate(effective)
+
                 if HAS_PAC and item.get('_type') == 'Event':
                     obj = resolve_object(context, item)
                     obj.start = pydt(DateTime(obj.start)).astimezone(tz)
