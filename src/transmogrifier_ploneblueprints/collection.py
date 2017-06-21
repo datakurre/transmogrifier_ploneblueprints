@@ -12,9 +12,12 @@ class FlattenSubcollections(Blueprint):
         context = self.transmogrifier.context
         for item in self.previous:
             if item.get('_type') in ['Collection', 'Topic']:
-                obj = aq_base(resolve_object(context, dict(
-                    _path='/'.join(item['_path'].split('/')[:-1])),
-                    default=None))
+                try:
+                    obj = aq_base(resolve_object(context, dict(
+                        _path='/'.join(item['_path'].split('/')[:-1]))    ,
+                        default=None))
+                except AssertionError:
+                    obj = None
 
                 if obj and all([obj.portal_type in ['Collection', 'Topic'],
                                item['_type'] in ['Collection', 'Topic']]):
