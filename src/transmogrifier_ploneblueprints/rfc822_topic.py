@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from DateTime import DateTime
 from DateTime.interfaces import SyntaxError
+from DateTime.interfaces import DateError
 from json import JSONDecoder
 from json import JSONEncoder
 from json import scanner
@@ -900,7 +901,7 @@ def parse_string(*args):
         dt = DateTime(s)
         if str(dt) == s:
             return dt, pos
-    except SyntaxError:
+    except (SyntaxError, DateError):
         pass
     return s, pos
 
