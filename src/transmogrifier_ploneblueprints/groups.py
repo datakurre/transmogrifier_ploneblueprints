@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from DateTime import DateTime
 from plone import api
 from transmogrifier.blueprints import Blueprint
 from transmogrifier.blueprints import ConditionalBlueprint
@@ -23,6 +24,11 @@ class GetGroups(Blueprint):
             # ensure isGroup is True, properties is None for default groups
             if properties is not None:
                 properties['isGroup'] = True
+
+            # drop datatime values
+            for key in properties:
+                if isinstance(properties[key], DateTime):
+                    del properties[key]
 
             item = {
                 'id': group_id,
