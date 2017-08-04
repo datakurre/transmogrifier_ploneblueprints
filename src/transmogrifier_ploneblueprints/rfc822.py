@@ -64,9 +64,8 @@ else:
 
 def marshall(obj):
     types_tool = api.portal.get_tool('portal_types')
-    fti = types_tool.get(obj.portal_type)
     # noinspection PyUnresolvedReferences
-    if HAS_DEXTERITY and IDexterityFTI.providedBy(fti):
+    if HAS_DEXTERITY and IDexterityContent.providedBy(obj):
         # DX
         message = constructMessageFromSchemata(obj, iterSchemata(obj))
         # Ensure that all DC fields are included
