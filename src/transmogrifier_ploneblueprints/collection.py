@@ -14,7 +14,7 @@ class FlattenSubcollections(Blueprint):
             if item.get('_type') in ['Collection', 'Topic']:
                 try:
                     obj = aq_base(resolve_object(context, dict(
-                        _path='/'.join(item['_path'].split('/')[:-1]))    ,
+                        _path='/'.join(item['_path'].split('/')[:-1])),
                         default=None))
                 except AssertionError:
                     obj = None

@@ -60,6 +60,7 @@ class PloneBlueprints(PloneSandboxLayer):
             configuration=filename
         )
 
+
 PLONEBLUEPRINTS_FIXTURE = PloneBlueprints()
 
 PLONEBLUEPRINTS_INTEGRATION_TESTING = IntegrationTesting(

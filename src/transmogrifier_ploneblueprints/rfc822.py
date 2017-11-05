@@ -63,7 +63,6 @@ else:
 
 
 def marshall(obj):
-    types_tool = api.portal.get_tool('portal_types')
     # noinspection PyUnresolvedReferences
     if HAS_DEXTERITY and IDexterityContent.providedBy(obj):
         # DX
